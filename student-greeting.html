@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="config.js"></script>
+  <meta charset="UTF-8"/>
+  <link rel="icon" type="image/png" href="icon.png"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aula Futura - Welcome</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Nunito', sans-serif; background: #1a1a2e; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px 24px; }
+    .logo { height: 70px; margin-bottom: 8px; }
+    .welcome-title { font-size: 1.3rem; font-weight: 900; color: white; text-align: center; margin-bottom: 12px; }
+    .card { background: #16213e; border-radius: 20px; padding: 20px; width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 8px 40px rgba(0,0,0,0.4); }
+    .greeting-btn { padding: 14px; border-radius: 12px; border: none; font-family: Nunito, sans-serif; font-size: 1rem; font-weight: 900; cursor: pointer; transition: transform 0.15s, background 0.2s, opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .greeting-btn:hover:not(:disabled) { transform: scale(1.02); }
+    .btn-enter { background: #1a73e8; color: white; }
+    .btn-enter:disabled { background: #334; color: #667; cursor: not-allowed; opacity: 0.5; }
+    .btn-enter:not(:disabled):hover { background: #1558b0; }
+    .btn-speed { background: #00897b; color: white; }
+    .btn-speed:hover { background: #00695c; }
+    .btn-schedule { background: #0f3460; color: #a0c4ff; border: 2px solid #1a73e8; }
+    .btn-schedule:hover { background: #1a3a6e; }
+    .btn-exit { background: transparent; color: #667; border: 2px solid #334; }
+    .btn-exit:hover { border-color: #e53935; color: #e53935; }
+
+    /* Network test modal */
+    #net-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; flex-shrink: 0; }
+    #net-box { background: #16213e; border-radius: 24px; padding: 28px 24px; width: 90%; max-width: 340px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+    #net-title { font-size: 1rem; font-weight: 900; color: #a0c4ff; margin-bottom: 20px; }
+    #net-verdict { display: none; font-size: 2.5rem; margin-bottom: 6px; }
+    #net-verdict-label { display: none; font-size: 1rem; font-weight: 900; margin-bottom: 20px; }
+    .net-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .net-card { background: #0f3460; border-radius: 12px; padding: 12px 6px; }
+    .net-val { font-size: 1.4rem; font-weight: 900; color: white; }
+    .net-unit { font-size: 0.65rem; color: #a0c4ff; font-weight: 700; margin-top: 2px; }
+    .net-lbl { font-size: 0.7rem; color: #667; margin-top: 3px; }
+    #net-enter-btn { display: none; width: 100%; padding: 14px; border-radius: 12px; border: none; background: #1a73e8; color: white; font-family: Nunito; font-size: 1rem; font-weight: 900; cursor: pointer; margin-bottom: 10px; }
+    #net-enter-btn:hover { background: #1558b0; }
+    .net-close-btn { width: 100%; padding: 10px; border-radius: 12px; border: none; background: #0f3460; color: #a0c4ff; font-family: Nunito; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
+    #nudge-bar { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 99999; padding: 14px 12px; text-align: center; color: white; font-weight: 900; font-size: 1.05rem; line-height: 1.5; animation: nudgeflash 0.9s infinite; box-shadow: 0 4px 18px rgba(0,0,0,0.5); }
+    @keyframes nudgeflash { 0%, 100% { background: #e53935; } 50% { background: #7f0000; } }
+  </style>
+</head>
+<body>
+
+<div id="nudge-bar"></div>
+
+<a href="login.html"><img src="LOGO.png" class="logo" alt="Aula Futura" style="cursor:pointer;"/></a>
+<div class="welcome-title">Welcome, <span id="student-name">Student</span>! 👋</div>
+
+<div class="card">
+  <button class="greeting-btn btn-enter" id="enter-btn" onclick="enterClass()" disabled>🎓 Enter Class</button>
+  <button class="greeting-btn btn-speed" id="speed-btn" onclick="openNetTest()">📶 Run Speed Test</button>
+  <button class="greeting-btn btn-schedule" onclick="window.location.href='student.html'">🎓 Student Panel</button>
+  <button class="greeting-btn btn-exit" onclick="exitToLogin()">🚪 Exit</button>
+</div>
+
+<!-- Network Test Modal -->
+<div id="net-modal">
+  <div id="net-box">
+    <div id="net-title">📡 Ready to test your connection</div>
+    <div id="net-verdict"></div>
+    <div id="net-verdict-label"></div>
+    <div class="net-grid">
+      <div class="net-card"><div class="net-val" id="m-ping">—</div><div class="net-unit">ms</div><div class="net-lbl">Ping</div></div>
+      <div class="net-card"><div class="net-val" id="m-jitter">—</div><div class="net-unit">ms</div><div class="net-lbl">Jitter</div></div>
+      <div class="net-card"><div class="net-val" id="m-loss">—</div><div class="net-unit">%</div><div class="net-lbl">Packet Loss</div></div>
+    </div>
+    <button id="net-enter-btn" onclick="proceedToClass()">🎓 Enter Class</button>
+    <button class="net-close-btn" onclick="document.getElementById('net-modal').style.display='none'">Close</button>
+  </div>
+</div>
+
+<script>
+  const SERVER_URL = window.AF_CONFIG.SERVER_URL;
+
+  if (/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)) {
+    document.addEventListener('click', () => {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+    }, { once: true });
+  }
+
+  const token = localStorage.getItem('studentToken');
+  const room  = localStorage.getItem('studentRoom');
+  const name  = localStorage.getItem('studentName');
+  if (!token || !room) window.location.href = 'login.html';
+  document.getElementById('student-name').textContent = name || 'Student';
+
+  let _sessionId = null;
+  let _sessionTime = null;
+  let _netResult = null;
+
+  function nowGDLMins() {
+    const s = new Date().toLocaleString('en-US', { timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit', hour12: false });
+    const [h, m] = s.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  async function getActiveSessionId() {
+    try {
+      const res = await fetch(`${SERVER_URL}/assignments?room=${room}`, { headers: { Authorization: `Bearer ${token}` } });
+      const assignments = await res.json();
+      if (!assignments.length) return null;
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
+      const todayA = assignments.filter(a => a.date === today);
+      if (!todayA.length) return null;
+      const nowMins = nowGDLMins();
+      let best = null, bestDiff = Infinity;
+      for (const a of todayA) {
+        const [hh, mm] = a.time.split(':').map(Number);
+        const diff = Math.abs(nowMins - (hh * 60 + mm));
+        if (diff < bestDiff && diff <= 90) { bestDiff = diff; best = a; }
+      }
+      _sessionTime = best?.time || null;
+      return best?.sessionId || null;
+    } catch(e) { return null; }
+  }
+
+  async function init() {
+    _sessionId = await getActiveSessionId();
+    postLobby('lobby-opened');
+    const cached = _sessionId && localStorage.getItem(`nettest_${_sessionId}`);
+    if (cached) { _netResult = JSON.parse(cached); unlockEnterBtn(_netResult); }
+  }
+  init();
+
+  function unlockEnterBtn(result) {
+    document.getElementById('enter-btn').disabled = false;
+    const emoji = result.quality === 'good' ? '🟢' : result.quality === 'fair' ? '🟡' : '🔴';
+    const btn = document.getElementById('speed-btn');
+    btn.textContent = `${emoji} ${result.avgPing}ms ping · ${result.jitter}ms jitter · ${result.packetLoss}% loss`;
+    btn.style.background = result.quality === 'good' ? '#1b5e20' : result.quality === 'fair' ? '#f57f17' : '#b71c1c';
+    btn.onclick = openNetTest;
+  }
+
+  function openNetTest() {
+    document.getElementById('net-modal').style.display = 'flex';
+    runNetTest();
+  }
+
+  async function runNetTest() {
+    document.getElementById('net-title').textContent = '📡 Testing your connection...';
+    document.getElementById('net-verdict').style.display = 'none';
+    document.getElementById('net-verdict-label').style.display = 'none';
+    document.getElementById('net-enter-btn').style.display = 'none';
+    ['m-ping','m-jitter','m-loss'].forEach(id => document.getElementById(id).textContent = '—');
+
+    const times = []; let failed = 0; const total = 50;
+    for (let i = 0; i < total; i++) {
+      try {
+        const s = performance.now();
+        await fetch(`https://1.1.1.1/cdn-cgi/trace?_=${Date.now()}_${i}`, { cache: 'no-store', mode: 'no-cors' });
+        times.push(performance.now() - s);
+      } catch(e) { failed++; }
+      if (times.length && i % 10 === 9) {
+        document.getElementById('m-ping').textContent = Math.round(times.reduce((a,b)=>a+b,0)/times.length);
+        document.getElementById('net-title').textContent = `📡 Testing... ${Math.round((i+1)/total*100)}%`;
+      }
+    }
+
+    const avgPing    = times.length ? Math.round(times.reduce((a,b)=>a+b,0)/times.length) : 9999;
+    const mean = avgPing; const jitter = times.length > 1 ? Math.round(Math.sqrt(times.reduce((s,t)=>s+(t-mean)**2,0)/times.length)) : 0;
+    const packetLoss = Math.round((failed / total) * 100);
+
+    document.getElementById('m-ping').textContent   = avgPing >= 9999 ? '∞' : avgPing;
+    document.getElementById('m-jitter').textContent = jitter;
+    document.getElementById('m-loss').textContent   = packetLoss;
+
+    let quality, emoji, label, color;
+    if (avgPing < 150 && jitter < 80 && packetLoss === 0) {
+      quality = 'good'; emoji = '🟢'; label = 'Great Connection'; color = '#00c853';
+    } else if (avgPing < 300 && jitter < 200 && packetLoss <= 10) {
+      quality = 'fair'; emoji = '🟡'; label = 'Fair Connection — You may experience minor audio or video issues during class.'; color = '#ffd740';
+    } else {
+      quality = 'poor'; emoji = '🔴'; label = 'Poor Connection — You may experience significant issues during class. Please check your internet.'; color = '#e53935';
+    }
+
+    document.getElementById('net-verdict').textContent = emoji;
+    document.getElementById('net-verdict').style.display = 'block';
+    const lbl = document.getElementById('net-verdict-label');
+    lbl.textContent = label; lbl.style.color = color;
+    lbl.style.fontSize = quality === 'good' ? '1.1rem' : '0.88rem';
+    lbl.style.display = 'block';
+    document.getElementById('net-title').textContent = '✅ Test complete';
+    document.getElementById('net-enter-btn').style.display = 'block';
+
+    const result = { avgPing, jitter, packetLoss, quality, testedAt: new Date().toISOString() };
+    _netResult = result;
+    if (_sessionId) {
+      localStorage.setItem(`nettest_${_sessionId}`, JSON.stringify(result));
+      fetch(`${SERVER_URL}/attendance/network-test/student`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ sessionId: _sessionId, networkTest: result, studentName: name })
+      }).catch(() => {});
+    }
+    unlockEnterBtn(result);
+  }
+
+  function proceedToClass() {
+    postLobby('enter-clicked');
+    window.location.href = _sessionId ? `classroom.html?room=${room}&sessionId=${_sessionId}` : `classroom.html?room=${room}`;
+  }
+
+  function enterClass() { proceedToClass(); }
+
+  // Tell the server what the student does in the lobby (best effort, never blocks anything)
+  function postLobby(event) {
+    if (!_sessionId) return;
+    try {
+      fetch(`${SERVER_URL}/student/lobby-event`, { method: 'POST', keepalive: true,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ sessionId: _sessionId, event }) }).catch(() => {});
+    } catch (e) {}
+  }
+
+  // ── "Your class is open" nudge ──
+  // Once the class has started AND the teacher has opened it, a student still sitting on this
+  // page gets an unmissable flashing banner. After 5 minutes their parent is actually emailed
+  // (the server checks the class is open and the student still isn't in it), so the on-screen
+  // warning is never an empty threat.
+  const NUDGE_WARN_SECS = 300;
+  let _classOpen = false, _nudgeSince = null, _warned = false;
+  async function pollClassOpen() {
+    if (!_sessionId || !_sessionTime) return;
+    const [hh, mm] = _sessionTime.split(':').map(Number);
+    if (nowGDLMins() < hh * 60 + mm) { _classOpen = false; return; }   // not started yet - nothing to nag about
+    try {
+      const r = await fetch(`${SERVER_URL}/class-open`, { headers: { Authorization: `Bearer ${token}` } });
+      _classOpen = (await r.json()).open === true;
+    } catch (e) {}
+  }
+  function renderNudge() {
+    const bar = document.getElementById('nudge-bar');
+    if (!_classOpen) { bar.style.display = 'none'; _nudgeSince = null; return; }
+    if (!_nudgeSince) _nudgeSince = Date.now();
+    const elapsed = Math.floor((Date.now() - _nudgeSince) / 1000);
+    bar.style.display = 'block';
+    if (elapsed >= NUDGE_WARN_SECS) {
+      bar.innerHTML = '📞 Contactando a tus padres...<br><small>Contacting your parents...</small>';
+      if (!_warned) {
+        _warned = true;
+        fetch(`${SERVER_URL}/student/lobby-warning`, { method: 'POST', keepalive: true,
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ sessionId: _sessionId }) }).catch(() => {});
+      }
+      return;
+    }
+    const left = NUDGE_WARN_SECS - elapsed;
+    const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+    const todo = document.getElementById('enter-btn').disabled
+      ? 'Corre la prueba de velocidad y luego entra / Run the speed test, then enter'
+      : 'Presiona "Enter Class" ahora / Press "Enter Class" now';
+    bar.innerHTML = `🔴 ¡TU CLASE YA ESTÁ ABIERTA! / YOUR CLASS IS OPEN!<br><span style="font-size:0.9rem;">${todo}</span><br><small>Contactaremos a tus padres en ${clock} / We will contact your parents in ${clock}</small>`;
+  }
+  setInterval(pollClassOpen, 5000);
+  setInterval(renderNudge, 1000);
+  function exitToLogin() {
+    ['studentToken','studentName','studentRoom'].forEach(k => localStorage.removeItem(k));
+    window.location.href = 'login.html';
+  }
+</script>
+</body>
+</html>

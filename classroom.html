@@ -1,0 +1,3560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="config.js"></script>
+  <meta charset="UTF-8"/>
+  <link rel="icon" type="image/png" href="icon.png"/>
+  <meta name="viewport" content="width=device-width, initial-scale=0.8"/>
+  <style>
+    @media screen and (orientation: portrait) and (max-width: 768px) {
+      #rotate-msg { display: flex !important; }
+    }
+  </style>
+  <title>Aula Futura Classroom</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Nunito', sans-serif; background: #1a1a2e; color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    #topbar { background: #16213e; padding: 6px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #0f3460; flex-shrink: 0; gap: 10px; position: relative; }
+    #topbar img { height: 40px; }
+    body.spectator #student-chat-bar, body.spectator #my-controls, body.spectator #my-schedule-btn, body.spectator #leave-btn { display: none !important; }
+    #room-label { font-size: 1rem; font-weight: 700; color: #ffffff; position: absolute; left: 50%; transform: translateX(-50%); background: #0f3460; padding: 4px 16px; border-radius: 20px; white-space: nowrap; }
+    #status-bar { font-size: 0.8rem; color: #a0c4ff; background: #0f3460; padding: 4px 10px; border-radius: 8px; }
+    #leave-btn { background: #e53935; color: white; border: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0; }
+    #leave-btn:hover { background: #c62828; }
+
+    #main { display: flex; flex: 1; overflow: hidden; }
+
+    #left-panel { width: 180px; flex-shrink: 0; background: #16213e; display: flex; flex-direction: column; padding: 12px; gap: 10px; border-right: 2px solid #0f3460; }
+    #chat-panel { position:fixed; bottom:70px; right:16px; width:300px; max-height:420px; background:#16213e; border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.5); display:none; flex-direction:column; z-index:9001; font-family:Nunito,sans-serif; overflow:hidden; }
+    #chat-messages { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; max-height:320px; }
+    #chat-messages::-webkit-scrollbar { width:4px; } #chat-messages::-webkit-scrollbar-thumb { background:#0f3460; border-radius:4px; }
+    .chat-msg { background:#0f3460; border-radius:10px; padding:8px 12px; }
+    .chat-msg .msg-name { font-size:0.75rem; font-weight:800; color:#a0c4ff; margin-bottom:2px; }
+    .chat-msg .msg-text { font-size:0.9rem; color:#e0e0e0; }
+    .chat-msg .msg-time { font-size:0.7rem; color:#555; margin-top:2px; }
+    #student-chat-bar { display:none; background:#16213e; border-top:2px solid #0f3460; padding:8px 12px; gap:8px; align-items:center; flex-shrink:0; }
+    #student-chat-input { flex:1; background:#0f3460; border:none; border-radius:8px; padding:8px 12px; color:white; font-family:Nunito,sans-serif; font-size:0.9rem; outline:none; }
+    #student-chat-input::placeholder { color:#555; }
+    #chat-badge { position:absolute; top:-4px; right:-4px; background:#e53935; color:white; font-size:0.65rem; font-weight:900; border-radius:50%; width:18px; height:18px; display:none; align-items:center; justify-content:center; }
+    .video-box { position: relative; background: #0f3460; border-radius: 12px; overflow: hidden; aspect-ratio: 4/3; }
+    .video-box video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .video-label { position: absolute; bottom: 6px; left: 8px; font-size: 0.8rem; font-weight: 700; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 6px; z-index: 3; }
+    .teacher-border { border: 3px solid #1a73e8; }
+    .mute-overlay { position: absolute; top: 6px; right: 6px; background: rgba(229,57,53,0.85); border-radius: 50%; width: 26px; height: 26px; display: none; align-items: center; justify-content: center; font-size: 0.8rem; }
+    #my-controls { display: flex; gap: 8px; }
+    .ctrl-btn { flex: 1; padding: 10px 4px; border-radius: 10px; border: none; font-family: 'Nunito', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; background: #0f3460; color: white; transition: background 0.2s; }
+    .ctrl-btn:hover { background: #1a73e8; }
+    .ctrl-btn.active { background: #e53935; }
+
+    #center-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+    #whiteboard-wrap { flex: 1; position: relative; overflow: hidden; background: #ffffff; min-height: 0; min-width: 0; }
+    #whiteboard-canvas { display: block; }
+
+    #toolbar { background: #16213e; border-top: 2px solid #0f3460; padding: 8px 16px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
+    .tool-btn { background: #0f3460; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-family: 'Nunito', sans-serif; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .tool-btn:hover { background: #1a73e8; }
+    .tool-btn.selected { background: #1a73e8; outline: 2px solid #a0c4ff; }
+    #color-picker { width: 36px; height: 36px; border-radius: 8px; border: 3px solid #0f3460; cursor: pointer; padding: 0; }
+    #brush-size { width: 90px; accent-color: #1a73e8; }
+    .tool-separator { width: 2px; height: 30px; background: #0f3460; border-radius: 2px; }
+    #teacher-only { display: none; gap: 8px; }
+
+    #right-panel { width: 180px; flex-shrink: 0; background: #16213e; display: flex; flex-direction: column; padding: 12px; gap: 10px; border-left: 2px solid #0f3460; overflow-y: auto; }
+    #right-panel-title { font-size: 0.85rem; font-weight: 700; color: #a0c4ff; text-align: center; }
+    .student-wrap { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+    .student-box { position: relative; background: #0f3460; border-radius: 10px; overflow: hidden; aspect-ratio: 4/3; width: 100%; }
+    .student-box video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .student-box img { width: 100%; height: 100%; object-fit: cover; display: block; position: absolute; top: 0; left: 0; }
+
+    /* 🎂 Birthday theme */
+    @keyframes birthday-border {
+      0% { border-color: #ff6b6b; }
+      25% { border-color: #ffd93d; }
+      50% { border-color: #6bcb77; }
+      75% { border-color: #4d96ff; }
+      100% { border-color: #ff6b6b; }
+    }
+    @keyframes confetti-fall {
+      0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(120px) rotate(720deg); opacity: 0; }
+    }
+    .birthday-box {
+      border: 3px solid #ff6b6b;
+      animation: birthday-border 2s infinite;
+      border-radius: 10px;
+    }
+    .birthday-emoji {
+      position: absolute; top: 4px; right: 4px; font-size: 1.4rem; z-index: 10;
+      animation: birthday-border 2s infinite;
+      filter: drop-shadow(0 0 4px rgba(255,255,255,0.8));
+    }
+    .confetti-piece {
+      position: absolute; width: 8px; height: 8px; border-radius: 2px; z-index: 20;
+      animation: confetti-fall 1.5s ease-in forwards;
+    }
+    .student-label { font-size: 0.75rem; font-weight: 700; color: #a0c4ff; text-align: center; padding: 2px 0; }
+    .student-controls { display: none; justify-content: center; gap: 4px; }
+    .student-wrap { display: flex; flex-direction: column; gap: 2px; width: 100%; margin-bottom: 4px; }
+    .student-label-below { font-size: 0.75rem; font-weight: 700; color: #a0c4ff; text-align: center; padding: 2px 0; }
+    .student-controls-row { display: flex; justify-content: center; gap: 3px; flex-wrap: wrap; }
+    .mute-student-btn { background: #0f3460; border: none; color: white; font-size: 0.68rem; border-radius: 6px; padding: 3px 5px; cursor: pointer; }
+    .mute-student-btn:hover { background: #e53935; }
+    .star-btn { background: #f57f17; border: none; color: white; font-size: 0.68rem; border-radius: 6px; padding: 3px 5px; cursor: pointer; }
+    .star-btn:hover { background: #ff8f00; }
+    .cam-student-btn { background: #0f3460; border: none; color: white; font-size: 0.7rem; border-radius: 6px; padding: 3px 6px; cursor: pointer; }
+    .cam-student-btn:hover { background: #e53935; }
+    .empty-slot { aspect-ratio: 4/3; background: #0f3460; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #a0c4ff; font-size: 0.8rem; font-weight: 700; opacity: 0.5; }
+
+    #connecting-screen { position: fixed; inset: 0; background: #1a1a2e; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; width: 100vw; height: 100vh; text-align: center; padding: 20px; }
+    .spinner { width: 60px; height: 60px; border: 6px solid #0f3460; border-top-color: #1a73e8; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .reaction-btn {
+    background: rgba(255,255,255,0.1); border: none; border-radius: 10px;
+    padding: 8px; font-size: 1.3rem; cursor: pointer; transition: transform 0.1s, background 0.15s;
+    width: 100%;
+  }
+  .reaction-btn:hover { background: rgba(255,255,255,0.25); transform: scale(1.2); }
+  .reaction-btn:active { transform: scale(0.95); }
+
+  /* Laser pointer */
+  #laser-dot {
+    position: fixed; width: 18px; height: 18px; border-radius: 50%;
+    background: radial-gradient(circle at 40% 40%, #ff6666, #ff0000);
+    box-shadow: 0 0 8px 4px rgba(255,0,0,0.6), 0 0 20px 8px rgba(255,0,0,0.3);
+    pointer-events: none; z-index: 99999; display: none;
+    transform: translate(-50%, -50%);
+  }
+  body.laser-mode { cursor: none !important; }
+  body.laser-mode * { cursor: none !important; }
+  .dice-container { width:200px;height:200px;position:relative;perspective:1000px;perspective-origin:50% 100%; }
+  .dice-cube { width:100%;height:100%;top:100px;position:absolute;transform-style:preserve-3d;transition:transform 2s ease-out;cursor:pointer; }
+  .dice-cube div { background:hsla(220,85%,50%,0.92);display:block;position:absolute;width:200px;height:200px;border:3px solid #1a3a8f;border-radius:16px; }
+  @media (max-width: 768px) {
+    #dice-inner { margin-bottom: 30vh; }
+    #dice-inner .dice-container { width: 120px; height: 120px; }
+    #dice-inner .dice-cube { top: 60px; }
+    #dice-inner .dice-cube div { width: 120px; height: 120px; }
+    #dice-inner .dice-face-front  { transform: translateZ(60px); }
+    #dice-inner .dice-face-back   { transform: rotateX(-180deg) translateZ(60px); }
+    #dice-inner .dice-face-right  { transform: rotateY(90deg) translateZ(60px); }
+    #dice-inner .dice-face-left   { transform: rotateY(-90deg) translateZ(60px); }
+    #dice-inner .dice-face-top    { transform: rotateX(90deg) translateZ(60px); }
+    #dice-inner .dice-face-bottom { transform: rotateX(-90deg) translateZ(60px); }
+    #coin-inner { margin-bottom: 30vh; }
+  }
+  .dice-face-front  { transform:translateZ(100px); }
+  .dice-face-back   { transform:rotateX(-180deg) translateZ(100px); }
+  .dice-face-right  { transform:rotateY(90deg) translateZ(100px); }
+  .dice-face-left   { transform:rotateY(-90deg) translateZ(100px); }
+  .dice-face-top    { transform:rotateX(90deg) translateZ(100px); }
+  .dice-face-bottom { transform:rotateX(-90deg) translateZ(100px); }
+  .ddot { display:block;position:absolute;width:34px;height:34px;background:white;border-radius:50%; }
+  .dice-face-front .ddot1 { top:83px;left:83px; }
+  .dice-face-back .ddot1 { top:43px;left:43px; } .dice-face-back .ddot2 { top:123px;left:123px; }
+  .dice-face-right .ddot1 { top:43px;left:83px; } .dice-face-right .ddot2 { top:83px;left:83px; } .dice-face-right .ddot3 { top:123px;left:83px; }
+  .dice-face-left .ddot1 { top:43px;left:43px; } .dice-face-left .ddot2 { top:43px;left:123px; } .dice-face-left .ddot3 { top:123px;left:43px; } .dice-face-left .ddot4 { top:123px;left:123px; }
+  .dice-face-top .ddot1 { top:43px;left:43px; } .dice-face-top .ddot2 { top:43px;left:123px; } .dice-face-top .ddot3 { top:83px;left:83px; } .dice-face-top .ddot4 { top:123px;left:43px; } .dice-face-top .ddot5 { top:123px;left:123px; }
+  .dice-face-bottom .ddot1 { top:43px;left:43px; } .dice-face-bottom .ddot2 { top:43px;left:83px; } .dice-face-bottom .ddot3 { top:43px;left:123px; } .dice-face-bottom .ddot4 { top:123px;left:43px; } .dice-face-bottom .ddot5 { top:123px;left:83px; } .dice-face-bottom .ddot6 { top:123px;left:123px; }
+  .floating-reaction, .floating-reaction-canvas {
+    position: fixed; pointer-events: none; z-index: 9999;
+    animation: floatUp 2.5s ease-out forwards;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .falling-reaction, .falling-reaction-canvas {
+    position: fixed; pointer-events: none; z-index: 9999;
+    animation: fallDown 2s ease-in forwards;
+  }
+  @keyframes floatUp {
+    0%   { transform: translateY(0);       opacity: 1; }
+    80%  { opacity: 1; }
+    100% { transform: translateY(-110vh);  opacity: 0; }
+  }
+  @keyframes fallDown {
+    0%   { transform: translateY(0);      opacity: 1; }
+    80%  { opacity: 1; }
+    100% { transform: translateY(110vh);  opacity: 0; }
+  }
+  @keyframes confettiFall {
+    0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+  @keyframes flipHeads {
+    from { transform: rotateY(0); }
+    to   { transform: rotateY(1800deg); }
+  }
+  @keyframes flipTails {
+    from { transform: rotateY(0); }
+    to   { transform: rotateY(1980deg); }
+  }
+  @keyframes popIn {
+    0%   { transform: translate(-50%,-50%) scale(0.5); opacity:0; }
+    70%  { transform: translate(-50%,-50%) scale(1.1); opacity:1; }
+    100% { transform: translate(-50%,-50%) scale(1);   opacity:1; }
+  }
+    0%   { box-shadow: 0 0 0 0 rgba(46,125,50,0.7); }
+    70%  { box-shadow: 0 0 0 10px rgba(46,125,50,0); }
+    100% { box-shadow: 0 0 0 0 rgba(46,125,50,0); }
+  }
+  @keyframes pulse-glow-red {
+    0%   { box-shadow: 0 0 0 0 rgba(229,57,53,0.7); }
+    70%  { box-shadow: 0 0 0 8px rgba(229,57,53,0); }
+    100% { box-shadow: 0 0 0 0 rgba(229,57,53,0); }
+  }
+    @property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+    @keyframes chase { to { --angle: 360deg; } }
+    .waiting-box {
+      position: relative; font-size: 1.3rem; font-weight: 900; color: #ffd740;
+      margin-bottom: 30px; padding: 12px 24px; border-radius: 12px;
+      background: rgba(255,215,64,0.08);
+    }
+    .waiting-box::before {
+      content: ''; position: absolute; inset: -3px; border-radius: 14px;
+      background: conic-gradient(from var(--angle, 0deg), #2ecc40 0deg 90deg, #ffd740 90deg 360deg);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude; padding: 3px;
+      animation: chase 2s linear infinite;
+    }
+    @keyframes starPop { 0%{transform:scale(0) rotate(-10deg);opacity:0} 60%{transform:scale(1.3)} 100%{transform:scale(1);opacity:1} }
+    #waiting-screen { display: none; position: fixed; inset: 0; background: #1a1a2e; z-index: 998; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+
+    /* ── MOBILE LANDSCAPE ── */
+    @media screen and (max-width: 900px) and (orientation: landscape) {
+      #topbar { padding: 3px 8px; min-height: 44px; }
+      #topbar img { height: 28px; }
+      #room-label { position: relative; left: auto; transform: none; display: inline-block !important; font-size: 0.8rem; padding: 3px 10px; margin: 0 auto; }
+      #status-bar { display: none !important; }
+      #leave-btn { padding: 5px 10px; font-size: 0.75rem; }
+      #left-panel { width: 90px; padding: 4px; gap: 4px; }
+      #right-panel { width: 80px; padding: 4px; gap: 4px; }
+      #right-panel-title { font-size: 0.75rem; }
+      #teacher-only { flex-wrap: wrap; gap: 3px; }
+      #teacher-only .tool-btn { padding: 5px 8px; font-size: 0.75rem; }
+      #toolbar { padding: 4px 8px; gap: 4px; }
+      .tool-btn { padding: 6px 10px; font-size: 0.8rem; }
+      #brush-size { width: 60px; }
+      #draw-controls { max-height: 80px; overflow-y: auto; }
+      #draw-controls button { font-size: 0.7rem; padding: 3px 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- WAITING SCREEN -->
+<div id="waiting-screen">
+  <img src="LOGO.png" style="height:100px;margin-bottom:20px;"/>
+  <p id="waiting-name" style="font-size:1.8rem;font-weight:900;color:#a0c4ff;margin-bottom:16px;">Welcome!</p>
+  <div id="waiting-status-box" class="waiting-box">
+    ⏳ Waiting for teacher to open the class...
+    <div style="font-size:1rem;opacity:0.8;margin-top:6px;">Esperando a que el maestro abra la clase...</div>
+  </div>
+  <div id="waiting-countdown" style="display:none;font-size:1.2rem;font-weight:700;color:#ffd740;margin-top:12px;"></div>
+  <button id="my-schedule-btn" onclick="showStudentSchedule()" style="display:none;margin-top:20px;background:#0f3460;color:#a0c4ff;border:2px solid #1a73e8;padding:10px 24px;border-radius:12px;font-family:Nunito,sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;">📅 My Schedule</button>
+  <div class="spinner"></div>
+</div>
+
+<!-- BREAK DURATION CHOICE MODAL (teacher only) -->
+<div id="help-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:16px;padding:22px;width:min(92vw,380px);max-height:85vh;overflow:auto;font-family:'Nunito',sans-serif;color:#222;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><b id="help-title" style="font-size:1.1rem;">Help</b><button onclick="closeHelp()" style="border:none;background:none;font-size:1.4rem;cursor:pointer;">✕</button></div>
+    <div id="help-body"></div>
+  </div>
+</div>
+<div id="break-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#16213e;border-radius:20px;padding:32px;width:100%;max-width:380px;margin:20px;text-align:center;font-family:Nunito,sans-serif;">
+    <div style="font-size:2rem;margin-bottom:8px;">☕</div>
+    <p style="font-size:1.2rem;font-weight:900;color:white;margin-bottom:6px;">Take a Break</p>
+    <p id="break-modal-remaining" style="font-size:0.85rem;color:#888;margin-bottom:22px;"></p>
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <button onclick="startBreak(5)" style="flex:1;padding:16px 8px;background:#0f3460;color:#a0c4ff;border:2px solid #1a73e8;border-radius:12px;font-family:Nunito,sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">5 min</button>
+      <button onclick="startBreak(10)" style="flex:1;padding:16px 8px;background:#0f3460;color:#a0c4ff;border:2px solid #1a73e8;border-radius:12px;font-family:Nunito,sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">10 min</button>
+      <button onclick="startBreak(15)" style="flex:1;padding:16px 8px;background:#0f3460;color:#a0c4ff;border:2px solid #1a73e8;border-radius:12px;font-family:Nunito,sans-serif;font-weight:900;font-size:1rem;cursor:pointer;">15 min</button>
+    </div>
+    <button onclick="document.getElementById('break-modal').style.display='none'" style="width:100%;padding:10px;background:none;color:#888;border:none;font-family:Nunito,sans-serif;font-size:0.9rem;cursor:pointer;">Cancel</button>
+  </div>
+</div>
+
+<!-- BREAK SCREEN (shown to teacher AND students while a break is active) -->
+<div id="break-screen" style="display:none;position:fixed;inset:0;background:#1a1a2e;z-index:997;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
+  <img src="LOGO.png" style="height:90px;margin-bottom:16px;"/>
+  <div style="font-size:3rem;margin-bottom:8px;">☕</div>
+  <p style="font-size:1.6rem;font-weight:900;color:#a0c4ff;margin-bottom:6px;">On a Break</p>
+  <p style="font-size:1rem;color:#888;margin-bottom:20px;">En un descanso</p>
+  <div id="break-countdown" style="font-size:2.2rem;font-weight:900;color:#ffd740;margin-bottom:8px;">5:00</div>
+  <p id="break-note" style="font-size:0.85rem;color:#888;max-width:320px;">Class will resume when the teacher is ready.<br>La clase continuará cuando el maestro esté listo.</p>
+  <button id="break-resume-btn" onclick="resumeFromBreak()" style="display:none;margin-top:28px;background:#2e7d32;color:white;border:none;padding:16px 36px;border-radius:14px;font-family:Nunito,sans-serif;font-size:1.05rem;font-weight:900;cursor:pointer;">▶️ Resume Class</button>
+</div>
+
+
+<!-- STUDENT SCHEDULE POPUP -->
+<div id="student-schedule-popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#16213e;border-radius:20px;padding:28px;max-width:420px;width:90%;font-family:Nunito,sans-serif;max-height:80vh;overflow-y:auto;">
+    <div style="font-size:1.1rem;font-weight:900;color:#a0c4ff;margin-bottom:16px;">📅 My Upcoming Classes</div>
+    <div id="student-schedule-list"></div>
+    <button onclick="document.getElementById('student-schedule-popup').style.display='none'" style="margin-top:16px;width:100%;padding:10px;background:#0f3460;color:#a0c4ff;border:none;border-radius:10px;font-family:Nunito,sans-serif;font-weight:700;cursor:pointer;">Close</button>
+  </div>
+</div>
+
+<!-- CONNECTING SCREEN -->
+<div id="connecting-screen">
+  <img src="LOGO.png" alt="Aula Futura" style="height:100px;display:block;margin:0 auto 40px auto;"/>
+  <div class="spinner" id="spinner"></div>
+  <p id="connect-msg" style="font-size:2rem;font-weight:900;color:#a0c4ff;text-align:center;margin:30px auto;width:100%;">Starting up...</p>
+  <button id="enter-btn" onclick="enterClass()" style="display:none;background:#1a73e8;color:white;border:none;padding:24px 60px;border-radius:20px;font-family:Nunito,sans-serif;font-size:1.6rem;font-weight:900;cursor:pointer;box-shadow:0 8px 30px rgba(26,115,232,0.4);margin:0 auto;">
+    ▶ Enter Class
+  </button>
+  <div id="device-error" style="display:none;margin-top:20px;background:rgba(229,57,53,0.15);border:2px solid #e53935;border-radius:12px;padding:14px 24px;max-width:400px;text-align:center;">
+    <p id="device-error-msg" style="color:#ff8a80;font-size:1rem;font-weight:700;margin-bottom:10px;"></p>
+    <button onclick="requestDevices()" style="background:#1a73e8;color:white;border:none;padding:10px 24px;border-radius:10px;font-family:Nunito,sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;">🔄 Try Again</button>
+  </div>
+  <button onclick="requestDevices()" style="margin-top:30px;background:none;border:2px solid #444;color:#888;padding:8px 20px;border-radius:10px;font-family:Nunito,sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;">❓ Camera / Mic Help</button>
+</div>
+
+<div id="topbar">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <img src="LOGO.png" alt="Aula Futura"/>
+    <div id="class-timer" style="display:none;font-family:Nunito,sans-serif;font-size:1.1rem;font-weight:900;color:#69f0ae;background:rgba(255,255,255,0.1);padding:4px 14px;border-radius:20px;min-width:80px;text-align:center;">0:00</div>
+    <div id="owed-timer" style="display:none;font-family:Nunito,sans-serif;font-size:0.9rem;font-weight:900;color:#e53935;background:rgba(229,57,53,0.15);padding:4px 10px;border-radius:20px;text-align:center;border:1px solid #e53935;">⏱ Owed: 0:00</div>
+    <div id="debt-payoff-timer" style="display:none;font-family:Nunito,sans-serif;font-size:0.9rem;font-weight:900;color:#ffd700;background:rgba(255,215,0,0.15);padding:4px 10px;border-radius:20px;text-align:center;border:1px solid #ffd700;">🏅 +0:00 paying debt</div>
+  </div>
+  <span id="room-label" style="background:#e65100;color:white;padding:4px 14px;border-radius:20px;font-weight:700;font-size:0.9rem;transition:background 0.3s;">Room: —</span>
+  <div style="display:flex;gap:8px;align-items:center;">
+
+    <div id="reward-selector" style="display:none;gap:4px;align-items:center;">
+      <button id="reward-star-btn" onclick="setRewardType('star')" title="Give Star" style="background:#f57f17;border:none;width:30px;height:30px;border-radius:8px;font-size:1rem;cursor:pointer;border:2px solid #ffd740;">⭐</button>
+      <button id="reward-trophy-btn" onclick="setRewardType('trophy')" title="Give Trophy" style="background:#0f3460;border:none;width:30px;height:30px;border-radius:8px;font-size:1rem;cursor:pointer;border:2px solid transparent;">🏆</button>
+      <button id="reward-medal-btn" onclick="setRewardType('medal')" title="Give Medal" style="background:#0f3460;border:none;width:30px;height:30px;border-radius:8px;font-size:1rem;cursor:pointer;border:2px solid transparent;">🥇</button>
+    </div>
+    <button id="leave-btn" onclick="leaveClass()" style="background:#e53935;color:white;border:none;width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18.36 6.64A9 9 0 1 1 5.64 6.64"/>
+        <line x1="12" y1="2" x2="12" y2="12"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<div id="main">
+  <div id="left-panel">
+    <div id="teacher-name-above" style="display:none;font-size:0.8rem;font-weight:700;color:#a0c4ff;text-align:center;padding:4px 0;"></div>
+    <div class="video-box teacher-border" style="position:relative;cursor:pointer;" onclick="if(IS_TEACHER)toggleCam()">
+      <video id="left-video" autoplay playsinline></video>
+      <div class="video-label" id="left-label">...</div>
+      <div class="mute-overlay" id="my-mute-icon">🔇</div>
+      <div id="cam-off-logo" style="display:none;position:absolute;inset:0;background:#0f3460;border-radius:10px;align-items:center;justify-content:center;z-index:2;">
+        <img src="LOGO.png" style="width:75%;object-fit:contain;"/>
+      </div>
+      <!-- Speaker icon overlay bottom-left -->
+      <div id="mic-overlay" onclick="event.stopPropagation();if(IS_TEACHER)toggleMic();" style="position:absolute;bottom:6px;left:6px;z-index:5;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.9rem;" title="Toggle Mic">🔊</div>
+      <div id="teacher-status" style="display:none;background:#e65100;color:white;font-size:0.8rem;font-weight:700;padding:6px 10px;border-radius:8px;text-align:center;position:absolute;bottom:0;left:0;right:0;z-index:4;">⚠️ Teacher disconnected...</div>
+    </div>
+    <div id="my-controls" style="display:none;"></div>
+
+    <!-- Reactions Panel -->
+    <div id="reactions-panel" style="margin-top:8px;display:none;">
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px;">
+        <button class="reaction-btn" onclick="sendReaction('😂')">😂</button>
+        <button class="reaction-btn" onclick="sendReaction('❤️')">❤️</button>
+        <button class="reaction-btn" onclick="sendReaction('😊')">😊</button>
+        <button class="reaction-btn" onclick="sendReaction('😢')">😢</button>
+        <button class="reaction-btn" onclick="sendReaction('😱')">😱</button>
+        <button class="reaction-btn" onclick="sendReaction('🎉')">🎉</button>
+        <button class="reaction-btn" onclick="sendReaction('👏')">👏</button>
+        <button class="reaction-btn" onclick="sendReaction('👍')">👍</button>
+      </div>
+      <!-- Divider -->
+      <div style="border-top:1px solid rgba(255,255,255,0.15);margin:8px 0;"></div>
+      <!-- Coin & Dice -->
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px;">
+        <button class="reaction-btn" onclick="flipCoin()" title="Coin Flip">🪙</button>
+        <button class="reaction-btn" onclick="openDice(1)" title="Roll 1 Die">🎲</button>
+        <button class="reaction-btn" style="grid-column:span 2;" onclick="openDice(2)" title="Roll 2 Dice">🎲🎲</button>
+      </div>
+    </div>
+  </div><!-- end left-panel -->
+
+  <div id="center-panel">
+    <div id="whiteboard-wrap">
+      <canvas id="whiteboard-canvas"></canvas>
+      <video id="screenshare-video" autoplay playsinline style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;z-index:10;"></video>
+    </div>
+    <div id="toolbar">
+      <button class="tool-btn selected" id="tool-draw" onclick="setTool('draw')">✏️ Draw</button>
+      <button class="tool-btn" id="tool-select" onclick="setTool('select')">☝️ Select</button>
+      <button class="tool-btn" id="tool-laser" onclick="setTool('laser')" style="display:none;">🔴 Laser</button>
+      <div class="tool-separator"></div>
+      <input type="color" id="color-picker" value="#000000" onchange="setColor(this.value)"/>
+      <input type="range" id="brush-size" min="2" max="30" value="5" onchange="setBrushSize(this.value)"/>
+      <div class="tool-separator"></div>
+      <div id="teacher-only">
+        <button class="tool-btn" id="upload-slide-btn" style="background:#1a73e8;" onclick="document.getElementById('img-upload').click()">🖼️ Upload Slide</button>
+        <input type="file" id="img-upload" accept="image/*" style="display:none" onchange="uploadImage(event)"/>
+        <button class="tool-btn" id="slide-resize-btn" style="background:#00838f;" onclick="toggleSlideEdit()">📐 Resize Slide</button>
+        <button class="tool-btn" id="clear-btn" onclick="clearBoard()" style="background:#e53935;">🗑️ Clear</button>
+        <button class="tool-btn" id="clear-all-btn" onclick="confirmClearAll()" style="background:#b71c1c;">🗑️ Clear All</button>
+        <button id="open-class-btn" class="tool-btn" onclick="toggleClassOpen()" style="background:#2e7d32;position:relative;">🔓 Open Class<span id="waiting-badge" style="display:none;position:absolute;top:-8px;right:-8px;background:#e53935;color:white;border-radius:50%;width:22px;height:22px;font-size:0.7rem;font-weight:900;align-items:center;justify-content:center;line-height:22px;text-align:center;z-index:10;"></span></button>
+        <button id="take-break-btn" class="tool-btn" onclick="openBreakModal()" style="background:#8d6e63;">☕ Take a Break</button>
+        <button id="help-btn" class="tool-btn" onclick="openHelp()" style="background:#c62828;">☰ Help</button>
+        <button id="screenshare-btn" class="tool-btn" onclick="toggleScreenShare()" style="background:#6a1b9a;">🖥️ Share Screen</button>
+      </div>
+      <div class="tool-separator"></div>
+      <button id="fullscreen-toolbar-btn" class="tool-btn" onclick="if(!document.fullscreenElement){document.documentElement.requestFullscreen()}else{document.exitFullscreen()}">⛶ Fullscreen</button>
+      <button id="leaderboard-btn" class="tool-btn" onclick="toggleLeaderboard()" style="background:#f57f17;">🏆 Leaderboard</button>
+      <div id="chat-btn-wrap" style="display:none;position:relative;">
+        <button class="tool-btn" onclick="toggleChat()" style="background:#1565c0;">💬 Messages</button>
+        <div id="chat-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#e53935;color:white;font-size:0.65rem;font-weight:900;border-radius:50%;width:18px;height:18px;align-items:center;justify-content:center;"></div>
+      </div>
+    </div>
+    <div id="student-chat-bar">
+      <input id="student-chat-input" type="text" placeholder="✉️ Message teacher privately..." maxlength="200"
+        onkeydown="if(event.key==='Enter')sendStudentMessage()"/>
+      <button onclick="sendStudentMessage()" style="background:#1a73e8;border:none;color:white;padding:8px 14px;border-radius:8px;font-family:Nunito,sans-serif;font-weight:700;cursor:pointer;white-space:nowrap;">Send</button>
+    </div>
+  </div>
+
+  <div id="right-panel">
+    <div id="right-panel-controls" style="display:none;gap:6px;margin-bottom:6px;">
+      <button id="spk-all-btn" onclick="toggleMuteAll()" title="Mute/Unmute All" style="flex:1;background:#0f3460;color:white;border:none;border-radius:8px;padding:6px;cursor:pointer;font-size:1rem;">🔊 All</button>
+      <button id="cam-all-btn" onclick="toggleCamAll()" title="Enable/Disable All Cameras" style="flex:1;background:#0f3460;color:white;border:none;border-radius:8px;padding:6px;cursor:pointer;font-size:1rem;">📷 All</button>
+    </div>
+    <div id="right-panel-title">Students</div>
+  </div>
+</div>
+
+<div id="laser-dot"></div>
+
+<!-- COIN FLIP OVERLAY -->
+<div id="coin-overlay" onclick="closeCoinOnBg(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;flex-direction:column;font-family:Nunito,sans-serif;">
+  <div id="coin-inner" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+    <div id="coin-flip" onclick="event.stopPropagation();doFlipCoin()" style="position:relative;margin:0 auto 20px;width:140px;height:140px;cursor:pointer;transform-style:preserve-3d;">
+      <div class="coin-side-a" style="position:absolute;width:100%;height:100%;border-radius:50%;backface-visibility:hidden;background:radial-gradient(circle at 35% 35%,#ffe680,#c8960c,#7a5800);box-shadow:inset 0 0 45px rgba(255,255,255,.3),0 12px 20px -10px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:3rem;z-index:2;">🦅</div>
+      <div class="coin-side-b" style="position:absolute;width:100%;height:100%;border-radius:50%;backface-visibility:hidden;background:radial-gradient(circle at 35% 35%,#ff9999,#bb0000,#7a0000);box-shadow:inset 0 0 45px rgba(255,255,255,.3),0 12px 20px -10px rgba(0,0,0,.4);transform:rotateY(-180deg);display:flex;align-items:center;justify-content:center;font-size:3rem;">🤪</div>
+    </div>
+    <div id="coin-result" style="color:white;font-size:1.3rem;font-weight:900;min-height:36px;opacity:0;transition:opacity 0.5s;text-align:center;"></div>
+  </div>
+</div>
+
+<!-- 3D DICE OVERLAY -->
+<div id="dice-overlay" onclick="closeDiceOnBg(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;flex-direction:column;font-family:Nunito,sans-serif;">
+  <div id="dice-inner" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+    <div id="dice-result-label" style="color:white;font-size:1.2rem;font-weight:900;margin-bottom:20px;min-height:36px;opacity:0;transition:opacity 0.5s;">You rolled a <span id="dice-result-num" style="color:#ffd740;font-size:1.8rem;"></span></div>
+    <div id="dice-containers" style="display:flex;gap:60px;align-items:center;justify-content:center;"></div>
+  </div>
+</div>
+
+<!-- STAR CELEBRATION -->
+<div id="star-overlay" style="display:none;position:fixed;inset:0;z-index:99990;pointer-events:none;flex-direction:column;align-items:center;justify-content:center;">
+  <div id="star-name" style="font-family:Nunito,sans-serif;font-size:3.5rem;font-weight:900;color:#ffd740;text-align:center;text-shadow:-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 0 30px #ffd740, 0 0 60px #ff8f00;z-index:2;position:relative;"></div>
+  <canvas id="confetti-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+</div>
+
+<!-- LEADERBOARD PANEL -->
+<div id="leaderboard-panel" style="display:none;position:fixed;top:70px;right:16px;z-index:9000;background:#16213e;border-radius:16px;padding:20px 24px;min-width:220px;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.5);font-family:Nunito,sans-serif;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    <span style="font-size:1.1rem;font-weight:900;color:#ffd740;">🏆 Leaderboard</span>
+    <button onclick="toggleLeaderboard()" style="background:none;border:none;color:#888;font-size:1.2rem;cursor:pointer;line-height:1;">✕</button>
+  </div>
+  <div id="leaderboard-list" style="color:#aaa;text-align:center;font-size:0.9rem;">No stars yet!</div>
+</div>
+
+<!-- TECH SUPPORT CHAT (shown only when an IT spectator is in the room) -->
+<div id="it-chat" style="display:none;position:fixed;right:12px;bottom:12px;z-index:9000;font-family:'Nunito',sans-serif;">
+  <button id="it-chat-toggle" onclick="itToggle()" style="background:#6a1b9a;color:#fff;border:none;border-radius:22px;padding:10px 16px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);position:relative;">🛠 Tech Support<span id="it-chat-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:#e53935;color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:.68rem;align-items:center;justify-content:center;"></span></button>
+  <div id="it-chat-box" style="display:none;width:min(88vw,320px);height:340px;background:#16213e;border:2px solid #6a1b9a;border-radius:14px;margin-bottom:8px;flex-direction:column;overflow:hidden;">
+    <div style="padding:8px 12px;background:#6a1b9a;color:#fff;font-weight:800;font-size:.9rem;">🛠 Tech Support chat</div>
+    <div id="it-media-list" style="display:none;max-height:150px;overflow:auto;padding:8px;border-bottom:1px solid #0f3460;font-size:.8rem;color:#eee;"></div>
+    <div id="it-chat-msgs" style="flex:1;overflow:auto;padding:8px;font-size:.85rem;color:#eee;"></div>
+    <div style="display:flex;gap:6px;padding:8px;border-top:1px solid #0f3460;">
+      <input id="it-chat-input" maxlength="500" placeholder="Type a message…" onkeydown="if(event.key==='Enter')itSend()" style="flex:1;min-width:0;padding:8px;border-radius:8px;border:none;font-size:.9rem;">
+      <button onclick="itSend()" style="background:#6a1b9a;color:#fff;border:none;border-radius:8px;padding:0 12px;font-weight:800;cursor:pointer;">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEACHER CHAT PANEL -->
+<div id="chat-panel" style="display:none;">
+  <div style="padding:12px 16px;border-bottom:1px solid #0f3460;display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-weight:900;color:#a0c4ff;font-size:1rem;">💬 Messages</span>
+    <button onclick="toggleChat()" style="background:none;border:none;color:#888;font-size:1.2rem;cursor:pointer;">✕</button>
+  </div>
+  <div id="chat-messages"></div>
+</div>
+
+<!-- LEAVE CLASS MODAL -->
+<div id="leave-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#16213e;border-radius:20px;padding:36px;width:100%;max-width:400px;margin:20px;text-align:center;font-family:Nunito,sans-serif;">
+    <p style="font-size:1.3rem;font-weight:900;color:white;margin-bottom:8px;">Leaving class?</p>
+    <p style="font-size:0.95rem;color:#888;margin-bottom:28px;">Choose what happens to your students</p>
+    <button onclick="teacherBRB()" style="display:block;width:100%;padding:16px;background:#1a73e8;color:white;border:none;border-radius:12px;font-family:Nunito,sans-serif;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:12px;">⏱️ I'll be back in 5 minutes</button>
+    <button onclick="teacherEndClass()" style="display:block;width:100%;padding:16px;background:#e53935;color:white;border:none;border-radius:12px;font-family:Nunito,sans-serif;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:12px;">🏁 End Class</button>
+    <button onclick="document.getElementById('leave-modal').style.display='none'" style="display:block;width:100%;padding:12px;background:none;color:#888;border:none;font-family:Nunito,sans-serif;font-size:0.95rem;cursor:pointer;">Cancel</button>
+  </div>
+</div>
+
+<!-- Rotate device overlay -->
+<div id="rotate-msg" style="display:none;position:fixed;inset:0;background:#1a1a2e;z-index:99999;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;">
+  <div style="font-size:4rem;margin-bottom:20px;animation:rotateIcon 2s linear infinite;">📱</div>
+  <p style="font-size:1.4rem;font-weight:900;color:#a0c4ff;margin-bottom:10px;">Please rotate your device</p>
+  <p style="font-size:1rem;color:#666;">This app works best in landscape mode</p>
+  <style>@keyframes rotateIcon { 0%{transform:rotate(0deg)} 50%{transform:rotate(90deg)} 100%{transform:rotate(0deg)} }</style>
+</div>
+
+<script>
+const SERVER_URL   = window.AF_CONFIG.SERVER_URL;
+const params       = new URLSearchParams(window.location.search);
+const ROOM         = params.get('room') || '001';
+const SESSION_ID   = params.get('sessionId') || null; // Unique ID for this class session — used to stamp attendance records
+const NET_TEST     = SESSION_ID ? (() => { try { const c = localStorage.getItem(`nettest_${SESSION_ID}`); return c ? JSON.parse(c) : null; } catch(e) { return null; } })() : null;
+// Tech support opens a class with ?it=1 using its own login (techToken), so it is never treated as admin/teacher
+const TECH_MODE    = params.get('it') === '1' && !!localStorage.getItem('techToken');
+const IS_TEACHER   = !TECH_MODE && !!localStorage.getItem('adminToken');
+const MY_TOKEN     = TECH_MODE ? (localStorage.getItem('techToken') || '') : (localStorage.getItem('adminToken') || localStorage.getItem('studentToken') || '');
+const MY_NAME      = IS_TEACHER ? 'Teacher' : (localStorage.getItem('studentName') || 'Student');
+// SPECTATOR: watch-only login (admin-created). The server decides what it may do; this only shapes the page.
+const MY_TOKEN_ROLE = (() => { try { return JSON.parse(atob(MY_TOKEN.split('.')[0])).role; } catch (e) { return null; } })();
+const IS_SPECTATOR = !IS_TEACHER && (MY_TOKEN_ROLE === 'spectator' || MY_TOKEN_ROLE === 'spectator_it' || MY_TOKEN_ROLE === 'techsupport');
+const IS_IT        = IS_SPECTATOR && (MY_TOKEN_ROLE === 'spectator_it' || MY_TOKEN_ROLE === 'techsupport');
+if (IS_SPECTATOR) { document.body.classList.add('spectator'); window._canDraw = false; }
+const studentSlots = {};
+
+// Get the stable identity (name) for a socketId — used for DOM lookups
+function getIdentity(socketId) {
+  return studentSlots[socketId] || socketId;
+}
+// The student's CURRENT socket id (changes every time they reconnect). Buttons built once per
+// student must look this up when clicked, not remember the id from when the slot was first made.
+function curSid(identity) {
+  return Object.keys(studentSlots).find(k => k !== '__self__' && studentSlots[k] === identity) || identity;
+}
+
+document.getElementById('room-label').textContent = SESSION_ID
+  ? `Room: ${ROOM} · #${SESSION_ID.slice(-6)}`
+  : `Room: ${ROOM}`;
+document.getElementById('room-label').style.background = '#e65100';
+if (IS_TEACHER) {
+  document.getElementById('teacher-only').style.display = 'flex';
+  document.getElementById('chat-btn-wrap').style.display = 'block';
+} else {
+  document.getElementById('my-controls').style.display = 'none';
+  document.getElementById('student-chat-bar').style.display = IS_SPECTATOR ? 'none' : 'flex';
+}
+
+const capCanvas = document.createElement('canvas');
+capCanvas.width = 320; capCanvas.height = 240;
+const capCtx    = capCanvas.getContext('2d');
+let captureInterval = null;
+let localStream     = null;
+let myMicOn = true, myCamOn = true;
+const remoteRoles   = {};
+const remoteNames   = {};
+let teacherSocketId = null;
+let mediaRecorder   = null;
+let classIsOpen     = false;
+let _joinedSocket   = null;
+let _joinedName     = null;
+
+// WebRTC audio
+const audioPeers = {};
+const videoPeers = {}; // WebRTC video connections
+const ICE_CONFIG = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+  ]
+};
+
+window._selfCamOff = false;
+window._selfMuted  = false;
+setTimeout(() => { window._selfMuted = false; }, 500);
+
+function updateSelfMonkey() {
+  const selfWrap = document.getElementById('slot-self');
+  if (!selfWrap) return;
+  // Target the inner student-box, not the wrap
+  const selfSlot = selfWrap.querySelector('.student-box') || selfWrap;
+  let monkey = selfSlot.querySelector('.monkey-overlay');
+  if (!monkey) {
+    monkey = document.createElement('img');
+    monkey.className = 'monkey-overlay';
+    monkey.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;display:none;';
+    selfSlot.appendChild(monkey);
+  }
+  if (window._selfCamOff && window._selfMuted) {
+    monkey.src = 'noseeandhear.png'; monkey.style.display = 'block';
+  } else if (window._selfCamOff) {
+    monkey.src = 'nosee.png'; monkey.style.display = 'block';
+  } else {
+    monkey.style.display = 'none';
+  }
+}
+
+// Students: if the camera is blocked/missing but the mic works, join with mic only.
+// The camera error is kept so tech support still sees it.
+async function acquireMedia() {
+  try {
+    return await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  } catch (e) {
+    if (IS_TEACHER) throw e;
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+      s._camError = e;
+      return s;
+    } catch (e2) { throw e; }
+  }
+}
+function reportAcquired(stream) {
+  if (stream._camError) {
+    reportMedia(mediaStatusFromError(stream._camError), getFriendlyError(stream._camError));
+    showCamOffNotice();
+  } else {
+    reportMedia('ok');
+    const n = document.getElementById('cam-off-banner'); if (n) n.style.display = 'none';
+  }
+}
+function showCamOffNotice() {
+  let b = document.getElementById('cam-off-banner');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'cam-off-banner';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9400;background:#b26a00;color:#fff;padding:10px 16px;font-family:Nunito,sans-serif;font-weight:700;text-align:center;font-size:.9rem;';
+    b.innerHTML = '<span>📷 Camera is off. You can still hear and talk. Tech Support is helping.</span> ' +
+      '<button id="cam-retry-btn" style="margin-left:10px;background:#fff;color:#b26a00;border:none;padding:6px 12px;border-radius:8px;font-weight:800;cursor:pointer;">Turn on camera</button>';
+    document.body.appendChild(b);
+    document.getElementById('cam-retry-btn').onclick = async () => {
+      try {
+        const v = await navigator.mediaDevices.getUserMedia({ video: true });
+        v.getVideoTracks().forEach(t => localStream && localStream.addTrack(t));
+        reportMedia('ok');
+        b.style.display = 'none';
+        document.getElementById('connect-msg').textContent = 'Camera on. Refresh the page (F5) to show your camera to the class.';
+      } catch (e) { reportMedia(mediaStatusFromError(e), getFriendlyError(e)); }
+    };
+  }
+  b.style.display = 'block';
+}
+
+async function startMedia() {
+  if (IS_SPECTATOR) {
+    document.getElementById('left-label').textContent = 'Waiting for teacher...';
+    document.getElementById('connect-msg').textContent = 'Connecting...';
+    connectSocket();
+    return;
+  }
+  try {
+    document.getElementById('connect-msg').textContent = 'Starting camera...';
+    localStream = await acquireMedia();
+    reportAcquired(localStream);
+    document.getElementById('device-error') && (document.getElementById('device-error').style.display = 'none');
+    if (IS_TEACHER) {
+      document.getElementById('left-video').srcObject = localStream;
+      document.getElementById('left-video').muted = true;
+      document.getElementById('left-label').textContent = '';
+    } else {
+      document.getElementById('left-label').textContent = 'Waiting for teacher...';
+    }
+    document.getElementById('connect-msg').textContent = 'Connecting...';
+    connectSocket();
+  } catch(e) { showDeviceError(e); }
+}
+
+async function requestDevices() {
+  const errDiv = document.getElementById('device-error');
+  if (errDiv) errDiv.style.display = 'none';
+  document.getElementById('connect-msg').textContent = 'Requesting camera & mic...';
+  document.getElementById('spinner').style.display = 'block';
+  document.getElementById('enter-btn').style.display = 'none';
+  try {
+    localStream = await acquireMedia();
+    reportAcquired(localStream);
+    if (IS_TEACHER) {
+      document.getElementById('left-video').srcObject = localStream;
+      document.getElementById('left-video').muted = true;
+    }
+    document.getElementById('connect-msg').textContent = 'Connecting...';
+    if (!window._socket) connectSocket();
+  } catch(e) { showDeviceError(e); }
+}
+
+function showDeviceError(e) {
+  reportMedia(mediaStatusFromError(e), getFriendlyError(e));
+  const errDiv = document.getElementById('device-error');
+  const errMsg = document.getElementById('device-error-msg');
+  if (!errDiv || !errMsg) { alert(getFriendlyError(e)); return; }
+  errMsg.textContent = getFriendlyError(e);
+  errDiv.style.display = 'block';
+  document.getElementById('spinner').style.display = 'none';
+  document.getElementById('connect-msg').textContent = 'Camera or mic issue';
+}
+
+function getFriendlyError(e) {
+  const name = e.name || '';
+  if (name === 'NotAllowedError' || name === 'PermissionDeniedError')
+    return '🚫 Camera & mic access was blocked. Please click the camera icon in your browser address bar and allow access, then try again.';
+  if (name === 'NotFoundError' || name === 'DevicesNotFoundError')
+    return '📷 No camera or microphone detected. Please plug one in and try again.';
+  if (name === 'NotReadableError' || name === 'TrackStartError')
+    return "⚠️ Camera or mic is already in use by another app. Please close it and try again.";
+  return `❌ Could not access camera/mic: ${e.message || 'Unknown error'}. Please refresh and try again.`;
+}
+
+// ── Camera/mic status for tech support ──
+// Students only. Uses its own light connection so it works even when the camera is blocked
+// and the student has not joined the class.
+let _mediaStatus = null;
+function mediaStatusFromError(e) {
+  const name = (e && e.name) || '';
+  if (name === 'NotAllowedError' || name === 'PermissionDeniedError') return 'blocked';
+  if (name === 'NotFoundError' || name === 'DevicesNotFoundError') return 'no-device';
+  if (name === 'NotReadableError' || name === 'TrackStartError') return 'in-use';
+  return 'error';
+}
+function reportMedia(status, message) {
+  if (IS_TEACHER || IS_SPECTATOR || !MY_TOKEN) return;
+  _mediaStatus = { room: ROOM, token: MY_TOKEN, status, message: message || '' };
+  if (!window._mediaSock) {
+    const ms = io(SERVER_URL, { timeout: 10000, reconnectionAttempts: 20, reconnectionDelay: 2000 });
+    window._mediaSock = ms;
+    ms.on('connect', () => { if (_mediaStatus) ms.emit('media-report', _mediaStatus); });
+    ms.on('request-media-again', showMediaRetry);
+  }
+  if (window._mediaSock.connected) window._mediaSock.emit('media-report', _mediaStatus);
+}
+function showMediaRetry() {
+  let b = document.getElementById('media-retry-banner');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'media-retry-banner';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9500;background:#1a73e8;color:#fff;padding:12px 16px;font-family:Nunito,sans-serif;font-weight:700;text-align:center;';
+    b.innerHTML = '<div style="margin-bottom:8px">🛠 Tech Support asks you to allow your camera &amp; mic.</div>' +
+      '<button id="media-retry-btn" style="background:#fff;color:#1a73e8;border:none;padding:8px 18px;border-radius:10px;font-weight:800;cursor:pointer;">Allow camera &amp; mic</button>';
+    document.body.appendChild(b);
+    document.getElementById('media-retry-btn').onclick = () => { b.style.display = 'none'; requestDevices(); };
+  }
+  b.style.display = 'block';
+}
+
+// Tech support list of students (IT spectators only)
+const _mediaRows = new Map();
+const MEDIA_LABEL = { ok: '✅ Camera & mic on', blocked: '🚫 Blocked', 'no-device': '📷 No camera/mic found', 'in-use': '⚠️ In use by another app', error: '❌ Error' };
+const MEDIA_TIP = { blocked: 'Tell them: click the camera icon in the address bar, Allow, then Ask again.', 'no-device': 'Tell them: plug in the camera/mic, then Ask again.', 'in-use': 'Tell them: close the other app using it, then Ask again.', error: 'Tell them: refresh the page, then Ask again.' };
+function renderMediaList() {
+  const list = document.getElementById('it-media-list');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!_mediaRows.size) { list.style.display = 'none'; return; }
+  list.style.display = 'block';
+  const hdr = document.createElement('div');
+  hdr.textContent = 'Student camera & mic';
+  hdr.style.cssText = 'font-weight:800;margin-bottom:4px;color:#ce93d8;';
+  list.appendChild(hdr);
+  _mediaRows.forEach((e, id) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;margin:6px 0;';
+    const txt = document.createElement('div');
+    txt.style.cssText = 'flex:1;min-width:0;';
+    const nm = document.createElement('div');
+    nm.textContent = e.name;
+    nm.style.cssText = 'font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+    const st = document.createElement('div');
+    st.textContent = MEDIA_LABEL[e.status] || e.status;
+    txt.appendChild(nm); txt.appendChild(st);
+    if (MEDIA_TIP[e.status]) {
+      const tip = document.createElement('div');
+      tip.textContent = MEDIA_TIP[e.status];
+      tip.style.cssText = 'font-size:.72rem;color:#ffcc80;';
+      txt.appendChild(tip);
+    }
+    const btn = document.createElement('button');
+    btn.textContent = 'Ask again';
+    btn.style.cssText = 'background:#6a1b9a;color:#fff;border:none;border-radius:8px;padding:6px 10px;font-weight:700;cursor:pointer;flex-shrink:0;';
+    btn.onclick = () => { if (window._socket) window._socket.emit('it-request-media', { id }); btn.textContent = 'Sent ✓'; setTimeout(() => { btn.textContent = 'Ask again'; }, 4000); };
+    row.appendChild(txt); row.appendChild(btn);
+    list.appendChild(row);
+  });
+}
+
+function connectSocket() {
+  const socket = io(SERVER_URL, { timeout: 10000, reconnectionAttempts: 10, reconnectionDelay: 2000 });
+  window._socket = socket;
+  if (IS_IT) {
+    socket.on('media-status', e => { _mediaRows.set(e.id, e); renderMediaList(); });
+    socket.on('media-gone', ({ id }) => { _mediaRows.delete(id); renderMediaList(); });
+  }
+
+  // Keepalive heartbeat — prevents idle disconnect from browser/proxy/network
+  // Fires every 25 seconds so the connection never goes idle
+  setInterval(() => {
+    if (socket.connected) socket.emit('heartbeat', { room: ROOM });
+  }, 25000);
+
+  socket.on('connect_error', (e) => {
+    document.getElementById('connect-msg').textContent = '⚠️ Connection failed. Retrying...';
+    document.getElementById('connect-msg').style.color = '#ffd740';
+    document.getElementById('room-label').style.background = '#e53935';
+  });
+
+  socket.on('disconnect', (reason) => {
+    document.getElementById('room-label').style.background = '#e53935';
+    if (reason === 'io server disconnect') {
+      setTimeout(() => socket.connect(), 2000);
+    }
+  });
+
+  socket.on('reconnect', () => {
+    document.getElementById('room-label').style.background = '#e65100';
+    // Only rejoin if we were actually in the class (not on waiting screen)
+    const waitingScreen = document.getElementById('waiting-screen');
+    const isWaiting = waitingScreen && waitingScreen.style.display !== 'none';
+    if (!isWaiting) socket.emit('join-room', { room: ROOM, token: MY_TOKEN, sessionId: SESSION_ID, networkTest: NET_TEST });
+  });
+
+
+
+  socket.on('connect', () => {
+    document.getElementById('connect-msg').textContent = 'Connected! Joining room...';
+    document.getElementById('room-label').style.background = '#e65100';
+    socket.emit('join-room', { room: ROOM, token: MY_TOKEN, sessionId: SESSION_ID, networkTest: NET_TEST });
+  });
+
+  socket.on('room-joined', async ({ name, teacherLoginAt, activeBreak }) => {
+    _joinedName = name; _joinedSocket = socket;
+    // The server forgets open classes when it restarts (deploys, crashes). If this teacher's page still shows the class as open, re-announce it so students and spectators are let in again.
+    if (IS_TEACHER && classIsOpen) socket.emit('class-opened', { room: ROOM });
+    // Store original login time from server — used for owed timer on reconnects
+    // This prevents the timer from thinking teacher is late based on reconnect time
+    if (IS_TEACHER && teacherLoginAt && !window._originalLoginAt) {
+      window._originalLoginAt = teacherLoginAt;
+    }
+    if (IS_SPECTATOR) {
+      document.getElementById('waiting-screen').style.display = 'none';
+      document.getElementById('connecting-screen').style.display = 'none';
+      if (!window._specEntered) {
+        window._specEntered = true;
+        enterClass();
+        setTimeout(() => socket.emit('request-canvas', { room: ROOM }), 1200);
+        setTimeout(() => { if (canvas && canvas.getObjects().length === 0) socket.emit('request-canvas', { room: ROOM }); }, 3000);
+      }
+      return;
+    }
+    document.getElementById('waiting-screen').style.display = 'none';
+    document.getElementById('connecting-screen').style.display = 'flex';
+    document.getElementById('spinner').style.display = 'none';
+    document.getElementById('connect-msg').textContent = IS_TEACHER ? `Welcome, ${name}!` : `Welcome, ${name}! 👋`;
+
+    if (activeBreak) showBreakScreen(activeBreak.durationMins);
+
+    if (IS_TEACHER) {
+      // Load today's assignment and check lock BEFORE showing Enter button
+      try {
+        const res = await fetch(`${SERVER_URL}/today-assignment/${ROOM}`, { headers: { Authorization: `Bearer ${MY_TOKEN}` } });
+        todayAssignments = await res.json();
+      } catch(e) {}
+      checkTeacherRoomLock();
+      // If locked, don't show enter button yet — checkTeacherRoomLock handles the button
+      if (!todayAssignments.length) {
+        document.getElementById('enter-btn').style.display = 'block';
+      startAutoEnterCountdown();
+      }
+      // Re-check every minute in case time crosses the unlock window
+      setInterval(() => { checkTeacherRoomLock(); }, 30000);
+    } else {
+      document.getElementById('enter-btn').style.display = 'block';
+    }
+  });
+
+  socket.on('room-error', (msg) => {
+    if (msg === 'CLASS_NOT_OPEN') {
+      document.getElementById('connecting-screen').style.display = 'none';
+      document.getElementById('waiting-screen').style.display = 'flex';
+      document.getElementById('waiting-name').textContent = `Welcome, ${MY_NAME}! 👋`;
+      if (!IS_TEACHER) loadTodayAssignment();
+    } else if (msg === 'ALREADY_IN_CLASS') {
+      document.getElementById('connecting-screen').style.display = 'none';
+      // Show clear message
+      const screen = document.createElement('div');
+      screen.style.cssText = 'position:fixed;inset:0;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:white;font-family:Nunito,sans-serif;text-align:center;padding:20px;';
+      screen.innerHTML = `
+        <div style="font-size:3rem;margin-bottom:16px;">⚠️</div>
+        <div style="font-size:1.3rem;font-weight:900;margin-bottom:8px;">Already in Class</div>
+        <div style="font-size:1rem;color:#a0c4ff;margin-bottom:4px;">This student is already logged in from another device.</div>
+        <div style="font-size:0.9rem;color:#a0c4ff;margin-bottom:24px;">Este estudiante ya está conectado desde otro dispositivo.</div>
+        <button onclick="window.location.href='login.html'" style="background:#1a73e8;color:white;border:none;padding:12px 28px;border-radius:10px;font-family:Nunito;font-size:1rem;font-weight:900;cursor:pointer;">← Back / Volver</button>
+      `;
+      document.body.appendChild(screen);
+    } else { alert(msg || 'Could not join room.'); window.location.href = 'login.html'; }
+  });
+
+  socket.on('existing-users', (users) => {
+    users.forEach(({ socketId, role, name, isBirthday }) => {
+      remoteRoles[socketId] = role; remoteNames[socketId] = name;
+      createVideoSlot(socketId, role, name);
+      if (role === 'student') showStudentSlot(socketId, name, isBirthday);
+      if (IS_TEACHER) setTimeout(() => callAudioPeer(socketId, socket), 1000);
+    });
+  });
+
+  socket.on('user-joined', ({ socketId, role, name, isBirthday }) => {
+    remoteRoles[socketId] = role; remoteNames[socketId] = name;
+    createVideoSlot(socketId, role, name);
+    if (role === 'student') showStudentSlot(socketId, name, isBirthday);
+    if (IS_TEACHER) {
+      setTimeout(() => callAudioPeer(socketId, socket), 1000);
+      setTimeout(() => callVideoPeer(socketId, socket), 1200);
+    }
+    // Spectator connects to everyone (nobody else knows it exists, so it makes every call)
+    if (IS_SPECTATOR && role === 'teacher') {
+      setTimeout(() => callAudioPeer(socketId, socket), 1000);
+      setTimeout(() => callVideoPeer(socketId, socket), 1200);
+    }
+    // Students connect to other students (not teacher - teacher handles that)
+    if (!IS_TEACHER && role === 'student') {
+      setTimeout(() => callAudioPeer(socketId, socket), 1000);
+      setTimeout(() => callVideoPeer(socketId, socket), 1200);
+    }
+    if (IS_TEACHER && canvas) {
+      // Always push current canvas to any newly-joined peer (even if empty, harmless)
+      if (canvas.getObjects().length > 0) {
+        setTimeout(() => socket.emit('send-canvas-to', { room: ROOM, targetId: socketId, json: canvas.toJSON(['data']) }), 1500);
+      }
+    }
+    if (!IS_TEACHER) {
+      // Student joining (late or rejoining) — ALWAYS request current canvas state,
+      // regardless of local canvas contents (a late joiner starts empty)
+      setTimeout(() => socket.emit('request-canvas', { room: ROOM }), 1200);
+      // Retry once in case the first request races the teacher's readiness
+      setTimeout(() => { if (canvas && canvas.getObjects().length === 0) socket.emit('request-canvas', { room: ROOM }); }, 3000);
+    }
+    if (IS_TEACHER && isSharing) {
+      callSsPeer(socketId);
+    }
+  });
+
+  // ── Video WebRTC signaling ──
+  socket.on('video-offer', async ({ from, offer }) => {
+    try {
+      // Both sides may offer at the same moment ("glare"). The side that normally starts the call
+      // keeps its offer; the other drops its own and answers. Without this both tear down
+      // their own offer and nobody connects - the random "no video until refresh" problem.
+      const existing = videoPeers[from];
+      if (existing && existing.signalingState === 'have-local-offer' && iInitiateVideo(from)) return;
+      const pc = createVideoPeer(from, socket);
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      await flushVideoIce(pc);
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit('video-answer', { to: from, answer: pc.localDescription });
+    } catch(e) { console.warn('video-offer error:', e.message); }
+  });
+  socket.on('video-answer', async ({ from, answer }) => {
+    const pc = videoPeers[from];
+    if (pc && pc.signalingState === 'have-local-offer') {
+      try { await pc.setRemoteDescription(new RTCSessionDescription(answer)); await flushVideoIce(pc); } catch(e) {}
+    }
+  });
+  socket.on('video-ice', async ({ from, candidate }) => {
+    const pc = videoPeers[from];
+    if (!pc) return;
+    // A candidate can arrive before the offer/answer is applied; keep it instead of losing it
+    if (!pc.remoteDescription) { (pc._iceQ = pc._iceQ || []).push(candidate); return; }
+    try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch(e) {}
+  });
+  // The other side's video never showed up: start the call again
+  socket.on('video-retry', ({ from }) => { if (remoteRoles[from] || IS_SPECTATOR) callVideoPeer(from, socket); });
+
+  socket.on('audio-chunk', ({ socketId, chunk }) => {
+    try {
+      const blob = new Blob([new Uint8Array(chunk)], { type: 'audio/webm;codecs=opus' });
+      const url = URL.createObjectURL(blob);
+      const a = new Audio(url);
+      a.play().then(() => setTimeout(() => URL.revokeObjectURL(url), 1000)).catch(() => {});
+    } catch(e) {}
+  });
+
+  socket.on('user-left', (socketId) => removeRemote(socketId));
+
+  // ── Spectators: teachers get their socket id (to send screenshare); everyone sees the 👁 count ──
+  window._spectatorIds = window._spectatorIds || new Set();
+  socket.on('spectator-joined', ({ socketId }) => {
+    if (!IS_TEACHER) return;
+    window._spectatorIds.add(socketId);
+    if (isSharing && screenStream) callSsPeer(socketId);
+  });
+  socket.on('spectator-left', ({ socketId }) => {
+    if (!IS_TEACHER) return;
+    window._spectatorIds.delete(socketId);
+    if (ssPeers[socketId]) { ssPeers[socketId].close(); delete ssPeers[socketId]; }
+  });
+  socket.on('spectator-count', ({ count }) => updateSpectatorEye(count));
+  socket.on('it-present', ({ present }) => { if (IS_SPECTATOR && !IS_IT) return; if (IS_IT) itShow(true); else if (present) itShow(true); else if (!document.getElementById('it-chat-msgs').children.length) itShow(false); });
+  socket.on('it-chat', itReceive);
+  socket.on('student-presence', ({ online }) => { window._studentsOnline = !!online; });
+
+  socket.on('you-are-muted', () => {
+    if (localStream) { localStream.getAudioTracks().forEach(t => t.enabled = false); myMicOn = false; }
+    const btn = document.getElementById('mic-btn');
+    if (btn) { btn.classList.add('active'); btn.textContent = '🔇 Mic OFF'; }
+    document.getElementById('my-mute-icon').style.display = 'flex';
+    window._selfMuted = true; updateSelfMonkey();
+  });
+
+  socket.on('you-are-unmuted', () => {
+    if (localStream) { localStream.getAudioTracks().forEach(t => t.enabled = true); myMicOn = true; }
+    const btn = document.getElementById('mic-btn');
+    if (btn) { btn.classList.remove('active'); btn.textContent = '🎤 Mic ON'; }
+    document.getElementById('my-mute-icon').style.display = 'none';
+    window._selfMuted = false; updateSelfMonkey();
+  });
+
+  socket.on('your-cam-toggled', ({ camOn }) => {
+    if (localStream) localStream.getVideoTracks().forEach(t => t.enabled = camOn);
+    window._selfCamOff = !camOn;
+    if (camOn) window._selfMuted = false;
+    updateSelfMonkey();
+  });
+
+  // Another student's cam was toggled — show/hide monkey on their slot
+  socket.on('student-cam-update', ({ targetId, camOn }) => {
+    const identity = getIdentity(targetId);
+    const slot = document.getElementById(`slot-${identity}`);
+    if (!slot) return;
+    let monkey = slot.querySelector('.monkey-overlay');
+    if (!camOn) {
+      if (!monkey) {
+        monkey = document.createElement('img');
+        monkey.className = 'monkey-overlay';
+        monkey.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;';
+        monkey.src = 'nosee.png';
+        slot.appendChild(monkey);
+      } else {
+        monkey.style.display = 'block';
+      }
+    } else if (monkey) {
+      monkey.style.display = 'none';
+    }
+  });
+
+  socket.on('kicked', ({ reason }) => {
+    alert(`⚠️ ${reason || 'You were disconnected.'}`);
+    window.location.href = 'login.html';
+  });
+
+  socket.on('draw-control', ({ canDraw }) => {
+    console.log('[DRAW-PERM] draw-control event received, canDraw =', canDraw, '| IS_TEACHER =', IS_TEACHER);
+    const wasDisabled = window._canDraw === false;
+    window._canDraw = canDraw;
+    if (!IS_TEACHER) {
+      applyDrawPermission(canDraw);
+      // Re-enabled after being blocked — pull the current board so the student
+      // catches up on anything drawn while their pen was off.
+      if (canDraw && wasDisabled) {
+        socket.emit('request-canvas', { room: ROOM });
+      }
+    }
+  });
+
+  socket.on('teacher-cam', ({ camOn }) => {
+    if (!IS_TEACHER) { const logo = document.getElementById('cam-off-logo'); if (logo) logo.style.display = camOn ? 'none' : 'flex'; }
+  });
+
+  socket.on('class-opened', () => {
+    if (!IS_TEACHER) { const ws = document.getElementById('waiting-screen'); if (ws && ws.style.display !== 'none') socket.emit('join-room', { room: ROOM, token: MY_TOKEN, sessionId: SESSION_ID, networkTest: NET_TEST }); }
+  });
+
+  socket.on('spot-available', () => {
+    if (!IS_TEACHER) { const ws = document.getElementById('waiting-screen'); if (ws && ws.style.display !== 'none') socket.emit('join-room', { room: ROOM, token: MY_TOKEN, sessionId: SESSION_ID, networkTest: NET_TEST }); }
+  });
+
+  socket.on('class-closed', () => {
+    if (!IS_TEACHER) {
+      if (localStream) localStream.getTracks().forEach(t => t.stop());
+      if (captureInterval) clearInterval(captureInterval);
+      document.body.innerHTML = `<div style="position:fixed;inset:0;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:Nunito,sans-serif;color:white;">
+        <img src="LOGO.png" style="height:120px;margin-bottom:30px;"/>
+        <p style="font-size:2rem;font-weight:900;color:#a0c4ff;margin-bottom:16px;">Class has ended!</p>
+        <p style="font-size:1.3rem;color:#888;margin-bottom:40px;">See you next time! Bye Bye 👋</p>
+        <a href="login.html" style="background:#1a73e8;color:white;padding:16px 40px;border-radius:14px;font-size:1.1rem;font-weight:700;text-decoration:none;">← Back to Home</a>
+      </div>`;
+    }
+  });
+  socket.on('star-given', ({ name, emoji, type, counts }) => {
+    showStarCelebration(name, emoji || '⭐');
+    if (IS_TEACHER && counts) { const sid = curSid(name); rewardCounts[sid] = { ...counts }; updateRewardCounter(sid); }
+    if (!IS_TEACHER) {
+      playTadaSound();
+      // Update student's own star counter under their own video tile (slot-self)
+      if (name === MY_NAME && counts) {
+        updateOwnStarCounter(counts);
+      }
+    }
+  });
+  socket.on('leaderboard-update', ({ stars }) => renderLeaderboard(stars));
+  // Student came back mid-class: their own tally is restored
+  socket.on('reward-counts', ({ counts }) => { if (!IS_TEACHER && counts) updateOwnStarCounter(counts); });
+  // Teacher: a returning student's saved state (mute, whiteboard, rewards) -> make the buttons match
+  socket.on('student-state', ({ socketId, name, muted, canDraw, counts }) => {
+    if (!IS_TEACHER) return;
+    const id = getIdentity(socketId);
+    if (counts) { rewardCounts[socketId] = { ...counts }; updateRewardCounter(socketId); }
+    const lbl = document.getElementById('lbl-' + id); if (lbl) lbl.style.background = canDraw === false ? '#e53935' : '#2e7d32';
+    const db = document.getElementById('draw-btn-' + socketId);
+    if (db) { db.style.background = canDraw === false ? '#e53935' : '#2e7d32'; db.textContent = `${canDraw === false ? '🚫' : '✏️'} ${name || 'Student'}`; }
+    if (!window._studentDrawStates) window._studentDrawStates = new Map();
+    window._studentDrawStates.set(socketId, canDraw !== false);
+    const spk = document.getElementById('spk-' + id);
+    if (spk) { spk.textContent = muted ? '🔇' : '🔊'; spk.style.background = muted ? 'rgba(229,57,53,0.85)' : 'rgba(0,0,0,0.5)'; }
+  });
+  socket.on('student-message', ({ name, message, time }) => receiveStudentMessage(name, message, time));
+
+  socket.on('break-started', ({ durationMins, breakNumber, breaksRemaining }) => {
+    _breaksRemaining = breaksRemaining;
+    if (IS_TEACHER && breaksRemaining <= 0) {
+      const btn = document.getElementById('take-break-btn');
+      if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; }
+    }
+    showBreakScreen(durationMins);
+  });
+  socket.on('break-ended', () => hideBreakScreen());
+  socket.on('break-error', ({ message }) => { if (IS_TEACHER) alert(message); });
+
+  socket.on('reaction', ({ emoji }) => showReaction(emoji));
+  socket.on('show-result', ({ text, sub, type, extra }) => {
+    if (!IS_TEACHER) {
+      if (type === 'coin' && extra) {
+        showStudentCoin(extra.isHeads);
+      } else if (type === 'dice' && extra) {
+        showStudentDice(extra.values, extra.total, extra.count);
+      } else {
+        showResultOnCanvas(text, sub);
+      }
+    }
+  });
+  socket.on('laser-move', ({ x, y }) => { if (!IS_TEACHER) showRemoteLaser(x, y); });
+  socket.on('waiting-count', ({ count }) => {
+    if (!IS_TEACHER) return;
+    // Get or create badge on open class button
+    let badge = document.getElementById('waiting-badge');
+    const openBtn = document.getElementById('open-class-btn');
+    if (!badge && openBtn) {
+      badge = document.createElement('span');
+      badge.id = 'waiting-badge';
+      badge.style.cssText = 'display:none;position:absolute;top:-8px;right:-8px;background:#e53935;color:white;border-radius:50%;width:22px;height:22px;font-size:0.7rem;font-weight:900;align-items:center;justify-content:center;line-height:22px;text-align:center;z-index:10;';
+      openBtn.style.position = 'relative';
+      openBtn.appendChild(badge);
+    }
+    const connectMsg = document.getElementById('connect-msg');
+    if (count > 0) {
+      const prevCount = parseInt(badge?.textContent) || 0;
+      if (badge) { badge.textContent = count; badge.style.display = 'flex'; }
+      if (openBtn) openBtn.style.animation = 'pulse-glow 1s infinite';
+      // Play choo choo only when new student joins
+      if (count > prevCount) {
+        if (!window._lastChooChoo || Date.now() - window._lastChooChoo > 5000) {
+          window._lastChooChoo = Date.now();
+          try {
+            const ctx = getAudioCtx();
+            const playTone = (freq, start, dur, vol) => {
+              const o = ctx.createOscillator(); const g = ctx.createGain();
+              o.connect(g); g.connect(ctx.destination);
+              o.frequency.value = freq; o.type = 'sawtooth';
+              g.gain.setValueAtTime(vol, ctx.currentTime + start);
+              g.gain.setValueAtTime(vol, ctx.currentTime + start + dur - 0.05);
+              g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+              o.start(ctx.currentTime + start); o.stop(ctx.currentTime + start + dur);
+            };
+            playTone(220, 0.0, 0.5, 0.3); playTone(196, 0.0, 0.5, 0.15);
+            playTone(220, 0.7, 0.5, 0.3); playTone(196, 0.7, 0.5, 0.15);
+          } catch(e) {}
+        }
+      }
+      if (connectMsg && !classIsOpen) {
+        const txt = connectMsg.textContent.replace(/ \| 👥.*/,'');
+        connectMsg.textContent = txt + ` | 👥 ${count} student${count>1?'s':''} waiting`;
+      }
+    } else {
+      if (badge) badge.style.display = 'none';
+      if (openBtn) openBtn.style.animation = '';
+      if (connectMsg) connectMsg.textContent = connectMsg.textContent.replace(/ \| 👥.*/,'');
+    }
+  });
+
+  socket.on('timer-info', ({ assignment, groupDebtMins }) => {
+    // Store group debt so debt counter knows when to stop
+    if (groupDebtMins !== undefined) window._minutesOwed = groupDebtMins;
+    if (!IS_TEACHER) startTimer(assignment);
+    else {
+      // Ensure timer is running for teacher too (fallback if loadSchedule missed it)
+      const timerEl = document.getElementById('class-timer');
+      if (timerEl && timerEl.style.display === 'none') startTimer(assignment);
+    }
+  });
+
+  socket.on('new-class', () => {
+    if (!IS_TEACHER) {
+      if (localStream) localStream.getTracks().forEach(t => t.stop());
+      document.body.innerHTML = `<div style="position:fixed;inset:0;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:Nunito,sans-serif;color:white;">
+        <img src="LOGO.png" style="height:120px;margin-bottom:30px;"/>
+        <p style="font-size:2rem;font-weight:900;color:#ffd740;margin-bottom:16px;">New class starting!</p>
+        <p style="font-size:1.1rem;color:#888;margin-bottom:40px;">Please wait for your teacher to let you in.</p>
+        <a href="login.html" style="background:#1a73e8;color:white;padding:14px 36px;border-radius:14px;font-size:1rem;font-weight:700;text-decoration:none;">← Back to Home</a>
+      </div>`;
+    }
+  });
+  socket.on('class-ended', () => {
+    if (!IS_TEACHER) {
+      // Stop all media tracks so webcam light turns off
+      if (localStream) localStream.getTracks().forEach(t => t.stop());
+      if (captureInterval) clearInterval(captureInterval);
+      document.body.innerHTML = `<div style="position:fixed;inset:0;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:Nunito,sans-serif;color:white;">
+        <img src="LOGO.png" style="height:120px;margin-bottom:30px;"/>
+        <p style="font-size:2rem;font-weight:900;color:#a0c4ff;margin-bottom:16px;">Class has ended!</p>
+        <p style="font-size:1.3rem;color:#888;margin-bottom:40px;">See you next time! Bye Bye 👋</p>
+        <a href="login.html" style="background:#1a73e8;color:white;padding:16px 40px;border-radius:14px;font-size:1.1rem;font-weight:700;text-decoration:none;">← Back to Home</a>
+      </div>`;
+    }
+  });
+
+  socket.on('teacher-disconnected', () => {
+    if (!IS_TEACHER) {
+      const ts = document.getElementById('teacher-status'); if (ts) ts.style.display = 'block';
+      document.getElementById('room-label').style.background = '#e65100';
+      // Show school logo in teacher video slot
+      const leftVid = document.getElementById('left-video');
+      if (leftVid) { leftVid.style.display = 'none'; }
+      let logoPlaceholder = document.getElementById('teacher-logo-placeholder');
+      if (!logoPlaceholder) {
+        logoPlaceholder = document.createElement('div');
+        logoPlaceholder.id = 'teacher-logo-placeholder';
+        logoPlaceholder.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#1a1a2e;z-index:5;';
+        logoPlaceholder.innerHTML = '<img src="LOGO.png" style="width:70%;max-width:120px;opacity:0.7;"/><div style="color:#667;font-size:0.75rem;font-weight:700;margin-top:8px;">Reconnecting...</div>';
+        if (leftVid) leftVid.parentElement.appendChild(logoPlaceholder);
+      }
+      logoPlaceholder.style.display = 'flex';
+    }
+  });
+
+  socket.on('teacher-reconnected', () => {
+    if (!IS_TEACHER) {
+      const ts = document.getElementById('teacher-status'); if (ts) ts.style.display = 'none';
+      document.getElementById('room-label').style.background = '#2e7d32';
+      const logoPlaceholder = document.getElementById('teacher-logo-placeholder');
+      if (logoPlaceholder) logoPlaceholder.style.display = 'none';
+      const leftVid = document.getElementById('left-video');
+      if (leftVid) leftVid.style.display = 'block';
+    }
+  });
+
+  // Update running disconnect total so debt counter is accurate
+  socket.on('disconnect-total-update', ({ totalDisconnectMins }) => {
+    if (IS_TEACHER) {
+      window._totalDisconnectMins = totalDisconnectMins;
+      window._disconnectStart = null; // clear active disconnect tracker
+    }
+  });
+
+  // Track when teacher's own socket disconnects
+  socket.on('disconnect', () => {
+    if (IS_TEACHER) window._disconnectStart = Date.now();
+  });
+
+  // When teacher reconnects, add the gap to running total temporarily
+  socket.on('connect', () => {
+    if (IS_TEACHER && window._disconnectStart) {
+      const gapMins = Math.round((Date.now() - window._disconnectStart) / 60000);
+      window._totalDisconnectMins = (window._totalDisconnectMins || 0) + gapMins;
+      window._disconnectStart = null;
+    }
+  });
+
+  socket.on('room-full', () => { if (IS_TEACHER) { const btn = document.getElementById('open-class-btn'); setOpenClassBtn('🔒 Class Full', '#e65100'); syncOpenClassBtnVisibility(); } });
+  socket.on('room-unlocked', () => { if (IS_TEACHER) { const btn = document.getElementById('open-class-btn'); setOpenClassBtn('🔒 Close Class', '#e53935'); syncOpenClassBtnVisibility(); } });
+
+  socket.on('disconnect', () => { document.getElementById('room-label').style.background = '#e65100'; });
+  socket.on('reconnect', () => {
+    document.getElementById('room-label').style.background = '#2e7d32';
+    if (window._whiteboardInit) socket.emit('join-room', { room: ROOM, token: MY_TOKEN, sessionId: SESSION_ID, networkTest: NET_TEST });
+  });
+
+  socket.on('whiteboard-path', ({ path }) => { if (!canvas) return; suppressSync = true; fabric.util.enlivenObjects([path], (objs) => { objs.forEach(o => canvas.add(o)); canvas.renderAll(); suppressSync = false; }); });
+  socket.on('whiteboard-sync', ({ json }) => { if (!canvas) return; suppressSync = true; canvas.loadFromJSON(json, () => { relockSlides(); canvas.renderAll(); suppressSync = false; }); });
+  socket.on('clear-all', () => {
+    if (!canvas) return;
+    suppressSync = true;
+    canvas.clear();
+    canvas.backgroundColor = '#ffffff';
+    canvas.renderAll();
+    suppressSync = false;
+  });
+  socket.on('whiteboard-clear', () => {
+    if (!canvas) return;
+    suppressSync = true;
+    const toRemove = canvas.getObjects().filter(obj => !obj.data?.locked);
+    toRemove.forEach(obj => canvas.remove(obj));
+    canvas.renderAll();
+    suppressSync = false;
+  });
+  socket.on('canvas-state', ({ json }) => { if (!canvas) return; suppressSync = true; canvas.loadFromJSON(json, () => { relockSlides(); canvas.renderAll(); suppressSync = false; }); });
+
+  // Teacher: student requested canvas on rejoin
+  socket.on('canvas-requested', ({ studentId }) => {
+    if (IS_TEACHER && canvas) {
+      socket.emit('send-canvas-to', { room: ROOM, targetId: studentId, json: canvas.toJSON(['data']) });
+    }
+  });
+  socket.on('whiteboard-image', ({ dataUrl, scale, left, top }) => {
+    if (!canvas) return;
+    suppressSync = true;
+    fabric.Image.fromURL(dataUrl, (img) => {
+      img.scale(scale).set({
+        left, top,
+        selectable: false, evented: false,
+        lockMovementX: true, lockMovementY: true,
+        hasControls: false, hasBorders: false,
+        data: { locked: true }
+      });
+      canvas.add(img);
+      canvas.sendToBack(img);
+      canvas.renderAll();
+      suppressSync = false;
+    });
+  });
+
+  // ── Screenshare WebRTC signaling ──
+  socket.on('screenshare-start', ({ from }) => {
+    if (!IS_TEACHER && from) {
+      // Store teacher socket ID for ICE/answer routing
+      window._ssTeacherId = from;
+    }
+  });
+
+  socket.on('ss-offer', async ({ from, offer }) => {
+    // Student receives offer from teacher
+    const pc = new RTCPeerConnection(ICE_CONFIG);
+    ssPeers[from] = pc;
+    pc.onicecandidate = (e) => { if (e.candidate) socket.emit('ss-ice', { to: from, candidate: e.candidate }); };
+    pc.ontrack = (e) => {
+      showScreenBehindCanvas(e.streams[0], false);
+    };
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit('ss-answer', { to: from, answer: pc.localDescription });
+    } catch(e) { console.warn('ss-offer error:', e.message); }
+  });
+
+  socket.on('ss-answer', async ({ from, answer }) => {
+    const pc = ssPeers[from];
+    if (pc && pc.signalingState === 'have-local-offer') {
+      try { await pc.setRemoteDescription(new RTCSessionDescription(answer)); } catch(e) {}
+    }
+  });
+
+  socket.on('ss-ice', async ({ from, candidate }) => {
+    const pc = ssPeers[from];
+    if (pc) { try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch(e) {} }
+  });
+
+  // When teacher gets answer back, call each student
+  socket.on('user-joined', ({ socketId, role }) => {
+    if (IS_TEACHER && isSharing && role === 'student') {
+      callSsPeer(socketId);
+    }
+  });
+
+  socket.on('screenshare-stop', () => {
+    if (!IS_TEACHER) {
+      // Close student side peer connections
+      Object.keys(ssPeers).forEach(id => { ssPeers[id].close(); delete ssPeers[id]; });
+      const vid = document.getElementById('screenshare-vid'); if (vid) vid.remove();
+      const sc  = document.getElementById('screenshare-img'); if (sc)  sc.remove();
+      const cc  = document.querySelector('.canvas-container'); if (cc) cc.style.zIndex = '';
+      if (canvas) { canvas.backgroundColor = '#ffffff'; canvas.renderAll(); }
+      if (window._canDraw === false) {
+        canvas.isDrawingMode = false; canvas.selection = false;
+        canvas.forEachObject(obj => { obj.selectable = false; obj.evented = false; });
+      }
+    }
+  });
+
+  // Audio relay started in enterClass() after localStream is confirmed ready
+  startAudioRelay(socket);
+}
+
+
+// ── Tech Support chat (IT spectator <-> teacher/students) ──
+let _itUnread = 0, _itOpen = false;
+function itShow(show) { const w = document.getElementById('it-chat'); if (w) w.style.display = show ? 'block' : 'none'; }
+function itToggle() {
+  _itOpen = !_itOpen;
+  document.getElementById('it-chat-box').style.display = _itOpen ? 'flex' : 'none';
+  if (_itOpen) { _itUnread = 0; document.getElementById('it-chat-badge').style.display = 'none'; const m = document.getElementById('it-chat-msgs'); m.scrollTop = m.scrollHeight; document.getElementById('it-chat-input').focus(); }
+}
+function itSend() {
+  const i = document.getElementById('it-chat-input'); const t = i.value.trim();
+  if (!t || !window._socket) return;
+  window._socket.emit('it-chat', { message: t }); i.value = '';
+}
+function itReceive(d) {
+  itShow(true);
+  const m = document.getElementById('it-chat-msgs'); if (!m) return;
+  const div = document.createElement('div');
+  div.style.cssText = 'margin:0 0 8px;padding:6px 8px;border-radius:8px;background:' + (d.role === 'it' ? '#4a148c' : '#0f3460') + ';';
+  const t = new Date(d.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  div.innerHTML = `<div style="font-weight:800;font-size:.75rem;color:#ce93d8;">${escapeHtml(d.from)} <span style="color:#888;font-weight:400;">${t}</span></div><div>${escapeHtml(d.message)}</div>`;
+  m.appendChild(div); m.scrollTop = m.scrollHeight;
+  if (!_itOpen) { _itUnread++; const b = document.getElementById('it-chat-badge'); b.textContent = _itUnread > 9 ? '9+' : _itUnread; b.style.display = 'flex'; if (d.role === 'it' && !IS_IT) { try { playMessagePing(); } catch (e) {} } }
+}
+
+let unreadCount = 0;
+
+function toggleChat() {
+  const panel = document.getElementById('chat-panel');
+  const isOpen = panel.style.display === 'flex';
+  panel.style.display = isOpen ? 'none' : 'flex';
+  if (!isOpen) {
+    unreadCount = 0;
+    const badge = document.getElementById('chat-badge');
+    badge.style.display = 'none';
+    badge.style.animation = '';
+  }
+}
+
+function playMessagePing() {
+  try {
+    const ctx = getAudioCtx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine';
+    o.frequency.setValueAtTime(880, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.1);
+    g.gain.setValueAtTime(0.3, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    o.start(ctx.currentTime);
+    o.stop(ctx.currentTime + 0.4);
+  } catch(e) {}
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+// For a value embedded inside onclick="...('VALUE')" - both the JS string
+// layer and the HTML attribute layer need escaping.
+function escapeJsAttr(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function receiveStudentMessage(name, message, time) {
+  const messages = document.getElementById('chat-messages');
+  const t = new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const div = document.createElement('div');
+  div.className = 'chat-msg';
+  div.innerHTML = `<div class="msg-name">${escapeHtml(name)}</div><div class="msg-text">${escapeHtml(message)}</div><div class="msg-time">${t}</div>`;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+  const panel = document.getElementById('chat-panel');
+  if (panel.style.display !== 'flex') {
+    unreadCount++;
+    const badge = document.getElementById('chat-badge');
+    badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+    badge.style.display = 'flex';
+    badge.style.animation = 'pulse-glow-red 1s infinite';
+  }
+  // Ping sound for teacher when message arrives
+  if (IS_TEACHER) playMessagePing();
+}
+
+let _lastMessageSentAt = 0;
+const MESSAGE_COOLDOWN_MS = 60000; // 1 minute
+
+function sendStudentMessage() {
+  const input = document.getElementById('student-chat-input');
+  const message = input.value.trim();
+  if (!message) return;
+
+  const now = Date.now();
+  const elapsed = now - _lastMessageSentAt;
+  if (elapsed < MESSAGE_COOLDOWN_MS) {
+    const secsLeft = Math.ceil((MESSAGE_COOLDOWN_MS - elapsed) / 1000);
+    showChatCooldownNotice(secsLeft);
+    return;
+  }
+
+  _lastMessageSentAt = now;
+  if (window._socket) window._socket.emit('private-message', { room: ROOM, message });
+  input.value = '';
+  disableChatInputTemporarily();
+}
+
+function showChatCooldownNotice(secsLeft) {
+  const input = document.getElementById('student-chat-input');
+  if (!input) return;
+  const placeholder = input.placeholder;
+  input.placeholder = `Wait ${secsLeft}s before sending another message`;
+  input.style.borderColor = '#e53935';
+  setTimeout(() => { input.placeholder = placeholder; input.style.borderColor = ''; }, 1500);
+}
+
+function disableChatInputTemporarily() {
+  const input = document.getElementById('student-chat-input');
+  const btn = document.querySelector('button[onclick="sendStudentMessage()"]');
+  if (!input) return;
+  input.disabled = true;
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
+  let remaining = MESSAGE_COOLDOWN_MS / 1000;
+  const original = input.placeholder;
+  const tick = () => {
+    remaining--;
+    if (remaining > 0) {
+      input.placeholder = `You can send another message in ${remaining}s`;
+    } else {
+      input.disabled = false;
+      input.placeholder = original;
+      if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+      clearInterval(timer);
+    }
+  };
+  input.placeholder = `You can send another message in ${remaining}s`;
+  const timer = setInterval(tick, 1000);
+}
+
+function createAudioPeer(targetId, socket) {
+  if (audioPeers[targetId]) return audioPeers[targetId];
+  const pc = new RTCPeerConnection(ICE_CONFIG);
+  if (localStream) localStream.getAudioTracks().forEach(t => pc.addTrack(t, localStream));
+  pc.onicecandidate = (e) => { if (e.candidate) socket.emit('audio-ice', { to: targetId, candidate: e.candidate }); };
+  pc.ontrack = (e) => { const audio = new Audio(); audio.srcObject = e.streams[0]; audio.autoplay = true; audio.play().catch(() => { showSoundUnlock(); }); audio.id = `audio-${targetId}`; document.body.appendChild(audio); };
+  audioPeers[targetId] = pc; return pc;
+}
+
+async function callAudioPeer(targetId, socket) {
+  const pc = createAudioPeer(targetId, socket);
+  const offer = await pc.createOffer({ offerToReceiveAudio: true });
+  await pc.setLocalDescription(offer);
+  socket.emit('audio-offer', { to: targetId, offer: pc.localDescription });
+}
+
+function removeAudioPeer(socketId) {
+  if (audioPeers[socketId]) { audioPeers[socketId].close(); delete audioPeers[socketId]; }
+  const audio = document.getElementById(`audio-${socketId}`); if (audio) audio.remove();
+}
+
+// ── WebRTC Video (peer-to-peer, zero server bandwidth) ──
+const videoTries = {}; // targetId -> automatic retries so far
+async function flushVideoIce(pc) {
+  const q = pc._iceQ || []; pc._iceQ = [];
+  for (const cand of q) { try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch(e) {} }
+}
+// Who starts (and restarts) the video call with this peer. Teacher and spectators always do;
+// a student never starts it with the teacher; between two students the lower id does.
+function iInitiateVideo(targetId) {
+  if (IS_TEACHER || IS_SPECTATOR) return true;
+  if (remoteRoles[targetId] === 'teacher') return false;
+  return !!(window._socket && window._socket.id < targetId);
+}
+// Self-heal: if no video arrives within a few seconds, or the link fails, redo the call
+// automatically (up to 4 times) so nobody has to refresh.
+function watchVideoPeer(targetId, pc, socket) {
+  const check = () => {
+    if (videoPeers[targetId] !== pc) return;                       // replaced or removed
+    if (!remoteRoles[targetId] && !studentSlots[targetId]) return;  // they left
+    const state = pc.connectionState;
+    if (pc._gotTrack && state !== 'failed' && state !== 'disconnected' && state !== 'closed') return;
+    if ((videoTries[targetId] = (videoTries[targetId] || 0) + 1) > 4) return;
+    if (iInitiateVideo(targetId)) callVideoPeer(targetId, socket);
+    else socket.emit('video-retry', { to: targetId });
+  };
+  setTimeout(check, 7000);
+  pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed') check(); };
+}
+function createVideoPeer(targetId, socket) {
+  if (videoPeers[targetId]) { videoPeers[targetId].close(); delete videoPeers[targetId]; }
+  const pc = new RTCPeerConnection(ICE_CONFIG);
+  watchVideoPeer(targetId, pc, socket);
+  if (localStream) localStream.getVideoTracks().forEach(t => pc.addTrack(t, localStream));
+  pc.onicecandidate = (e) => { if (e.candidate) socket.emit('video-ice', { to: targetId, candidate: e.candidate }); };
+  pc.ontrack = (e) => {
+    pc._gotTrack = true; videoTries[targetId] = 0;
+    const identity = getIdentity(targetId);
+    const existing = document.getElementById(`vimg-${identity}`);
+    if (existing) {
+      const vid = document.createElement('video');
+      vid.id = `vimg-${identity}`;
+      vid.autoplay = true; vid.playsInline = true; vid.muted = true; // camera video only; audio comes through its own peer
+      vid.style.cssText = existing.style.cssText || 'width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;z-index:1;';
+      vid.srcObject = (e.streams && e.streams[0]) || new MediaStream([e.track]);
+      existing.replaceWith(vid);
+      const pp = vid.play(); if (pp && pp.catch) pp.catch(() => {});
+    }
+  };
+  videoPeers[targetId] = pc;
+  return pc;
+}
+
+async function callVideoPeer(targetId, socket) {
+  const pc = createVideoPeer(targetId, socket);
+  const offer = await pc.createOffer({ offerToReceiveVideo: true });
+  await pc.setLocalDescription(offer);
+  socket.emit('video-offer', { to: targetId, offer: pc.localDescription });
+}
+
+function removeVideoPeer(socketId) {
+  if (videoPeers[socketId]) { videoPeers[socketId].close(); delete videoPeers[socketId]; }
+}
+
+function startAudioRelay(socket) {
+  if (!localStream && !IS_SPECTATOR) return;
+  // Remove any existing listeners first to prevent duplicates on reconnect
+  socket.off('audio-offer');
+  socket.off('audio-answer');
+  socket.off('audio-ice');
+  window._audioSocket = socket;
+  socket.on('audio-offer', async ({ from, offer }) => {
+    try {
+      let pc = audioPeers[from];
+      // If peer exists and is in stable state, close and recreate to avoid state collision
+      if (pc && pc.signalingState === 'stable' && pc.remoteDescription) {
+        pc.close(); delete audioPeers[from]; pc = null;
+      }
+      if (!pc) pc = createAudioPeer(from, socket);
+      // Handle signaling state collisions
+      if (pc.signalingState === 'have-local-offer') {
+        try {
+          await pc.setLocalDescription({ type: 'rollback' });
+        } catch(e) {
+          // Rollback failed — close and recreate
+          pc.close(); delete audioPeers[from];
+          pc = createAudioPeer(from, socket);
+        }
+      }
+      if (pc.signalingState !== 'stable' && pc.signalingState !== 'have-remote-offer') return;
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit('audio-answer', { to: from, answer: pc.localDescription });
+    } catch(e) { console.warn('audio-offer error:', e.message); }
+  });
+  socket.on('audio-answer', async ({ from, answer }) => {
+    const pc = audioPeers[from];
+    if (pc && pc.signalingState === 'have-local-offer') {
+      try { await pc.setRemoteDescription(new RTCSessionDescription(answer)); } catch(e) {}
+    }
+  });
+  socket.on('audio-ice', async ({ from, candidate }) => {
+    const pc = audioPeers[from];
+    if (pc) { try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch(e) {} }
+  });
+}
+
+function createVideoSlot(socketId, role, name) {
+  if (!IS_TEACHER && role === 'teacher') {
+    // Student sees teacher
+    teacherSocketId = socketId;
+    document.getElementById('left-video').style.display = 'none';
+    let vid = document.getElementById(`vimg-${getIdentity(socketId)}`);
+    if (!vid) {
+      vid = document.createElement('video');
+      vid.id = `vimg-${getIdentity(socketId)}`;
+      vid.autoplay = true; vid.playsInline = true; vid.muted = true;
+      vid.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;z-index:1;';
+      document.getElementById('left-video').parentElement.appendChild(vid);
+    }
+    const lbl = document.getElementById('left-label'); lbl.textContent = ''; lbl.style.zIndex = '3';
+    const nameAbove = document.getElementById('teacher-name-above'); if (nameAbove) { nameAbove.textContent = `Teacher ${name || ''}`; nameAbove.style.display = 'block'; }
+  } else if (!IS_TEACHER && role === 'student') {
+    // Students now see other students
+    showStudentSlot(socketId, name);
+  } else {
+    // Teacher sees all students
+    showStudentSlot(socketId, name);
+  }
+}
+
+function applyBirthdayTheme(identity, name) {
+  const slot = document.getElementById(`slot-${identity}`);
+  const lbl = document.getElementById(`lbl-${identity}`);
+  if (!slot) return;
+
+  // Add animated border
+  slot.classList.add('birthday-box');
+
+  // Add 🎂 emoji overlay
+  const emoji = document.createElement('div');
+  emoji.className = 'birthday-emoji';
+  emoji.textContent = '🎂';
+  slot.appendChild(emoji);
+
+  // Update label
+  if (lbl) lbl.textContent = `🎂 ${name || identity}`;
+
+  // Confetti burst
+  const colors = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff922b','#cc5de8'];
+  for (let i = 0; i < 12; i++) {
+    setTimeout(() => {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.left = Math.random() * 100 + '%';
+      piece.style.top = '0';
+      piece.style.animationDelay = Math.random() * 0.5 + 's';
+      slot.appendChild(piece);
+      setTimeout(() => piece.remove(), 2000);
+    }, i * 100);
+  }
+
+  // Birthday announcement to room (teacher only)
+  if (IS_TEACHER) {
+    setTimeout(() => {
+      const announce = document.createElement('div');
+      announce.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#ff6b6b,#ffd93d);color:white;padding:12px 24px;border-radius:20px;font-weight:900;font-size:1.1rem;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+      announce.textContent = `🎂 Happy Birthday ${name || identity}! 🎉`;
+      document.body.appendChild(announce);
+      setTimeout(() => announce.remove(), 4000);
+    }, 500);
+  }
+}
+
+function showStudentSlot(socketId, name, isBirthday) {
+  const identity = name || socketId; // stable key — survives reconnects
+
+  // If slot already exists for this identity, just update socketId mapping and return
+  if (document.getElementById(`wrap-${identity}`)) {
+    // Update socketId -> identity mapping for existing slot
+    // Remove old socketId key if different
+    const oldIds = [];
+    Object.keys(studentSlots).forEach(k => {
+      if (studentSlots[k] === identity && k !== identity) { oldIds.push(k); delete studentSlots[k]; }
+    });
+    studentSlots[socketId] = identity;
+    if (IS_TEACHER) {
+      // Carry the tally over and replace the whiteboard button that pointed at the dead connection
+      oldIds.forEach(o => {
+        if (rewardCounts[o] && !rewardCounts[socketId]) rewardCounts[socketId] = rewardCounts[o];
+        delete rewardCounts[o];
+        if (window._studentDrawStates) window._studentDrawStates.delete(o);
+        const ob = document.getElementById('draw-btn-' + o); if (ob) ob.remove();
+      });
+      addDrawControlBtn(socketId, name);
+      updateRewardCounter(socketId);
+    }
+    return;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'student-wrap'; wrap.id = `wrap-${identity}`;
+  const slot = document.createElement('div');
+  slot.className = 'student-box'; slot.id = `slot-${identity}`;
+  slot.innerHTML = `<video id="vimg-${identity}" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;${IS_TEACHER?'cursor:pointer;':''}"></video>
+    ${IS_TEACHER ? `<div id="spk-${identity}" style="position:absolute;bottom:4px;left:4px;z-index:5;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.75rem;">🔊</div>` : ''}`;
+  if (IS_TEACHER) {
+    slot.style.cursor = 'pointer';
+    slot.addEventListener('click', (e) => {
+      if (!e.target.closest(`#spk-${identity}`)) toggleStudentCamClick(curSid(identity));
+    });
+    const spk = slot.querySelector(`#spk-${identity}`);
+    if (spk) spk.addEventListener('click', (e) => { e.stopPropagation(); toggleStudentMicOverlay(curSid(identity)); });
+  }
+  const lbl = document.createElement('div');
+  lbl.className = 'student-label-below';
+  lbl.id = `lbl-${identity}`;
+  lbl.textContent = name || 'Student';
+  if (IS_TEACHER) {
+    lbl.style.cssText = 'cursor:pointer;background:#2e7d32;color:white;border-radius:8px;padding:2px 6px;font-size:0.75rem;font-weight:700;text-align:center;margin-top:2px;';
+    lbl.title = 'Click to toggle drawing permission';
+    lbl.onclick = () => toggleDrawByName(curSid(identity), name || 'Student', lbl);
+  }
+  wrap.appendChild(slot); wrap.appendChild(lbl);
+  if (IS_TEACHER) {
+    const ctrls = document.createElement('div');
+    ctrls.className = 'student-controls-row';
+    ctrls.innerHTML = `<button class="star-btn" onclick="giveStar(curSid('${escapeJsAttr(identity)}'),'${escapeJsAttr(name||'Student')}')">⭐</button>`;
+    wrap.appendChild(ctrls);
+  }
+  document.getElementById('right-panel').appendChild(wrap);
+  studentSlots[socketId] = identity;
+
+  // Add draw control button for teacher
+  if (IS_TEACHER) addDrawControlBtn(socketId, name);
+
+  // Apply birthday theme if it's their birthday!
+  if (isBirthday) setTimeout(() => applyBirthdayTheme(identity, name), 300);
+}
+
+function addDrawControlBtn(socketId, name) {
+  let drawControls = document.getElementById('draw-controls');
+  if (!drawControls) { drawControls = document.createElement('div'); drawControls.id = 'draw-controls'; drawControls.style.cssText = 'display:flex;flex-direction:column;gap:4px;margin-top:4px;'; document.getElementById('left-panel').appendChild(drawControls); }
+  const btn = document.createElement('button'); btn.id = `draw-btn-${socketId}`; btn.style.cssText = 'padding:5px 8px;border-radius:8px;border:none;font-family:Nunito,sans-serif;font-size:0.75rem;font-weight:700;cursor:pointer;background:#2e7d32;color:white;text-align:left;'; btn.textContent = `✏️ ${name || 'Student'}`; btn.onclick = () => toggleStudentDraw(socketId, btn); drawControls.appendChild(btn);
+}
+
+function toggleStudentDraw(socketId, btn) {
+  const enabled = btn.style.background === 'rgb(46, 125, 50)' || btn.style.background === '#2e7d32';
+  btn.style.background = enabled ? '#e53935' : '#2e7d32';
+  btn.textContent = `${enabled ? '🚫' : '✏️'} ${remoteNames[socketId] || 'Student'}`;
+  if (!window._studentDrawStates) window._studentDrawStates = new Map();
+  window._studentDrawStates.set(socketId, !enabled);
+  if (window._socket) window._socket.emit('toggle-student-draw', { room: ROOM, targetId: socketId, canDraw: !enabled });
+}
+
+function setupOwnSlot() {
+  if (!IS_TEACHER && localStream) {
+    const wrap = document.createElement('div');
+    wrap.className = 'student-wrap'; wrap.id = 'slot-self';
+    const box = document.createElement('div');
+    box.className = 'student-box';
+    box.innerHTML = `<video autoplay muted playsinline id="self-slot-video"></video>`;
+    const lbl = document.createElement('div');
+    lbl.className = 'student-label-below'; lbl.textContent = `${MY_NAME} (You)`;
+    wrap.appendChild(box); wrap.appendChild(lbl);
+    document.getElementById('right-panel').appendChild(wrap);
+    document.getElementById('self-slot-video').srcObject = localStream;
+    studentSlots['__self__'] = '__self__';
+    // Apply any star counts already received before this slot existed
+    if (window._myStarCounts) updateOwnStarCounter(window._myStarCounts);
+  }
+}
+
+// Updates the star/trophy/medal tally shown under the student's own video tile
+function updateOwnStarCounter(counts) {
+  window._myStarCounts = counts; // cache in case slot-self isn't built yet
+  const wrap = document.getElementById('slot-self');
+  if (!wrap) return;
+  let counter = wrap.querySelector('.star-counter');
+  if (!counter) {
+    counter = document.createElement('div');
+    counter.className = 'star-counter';
+    counter.style.cssText = 'text-align:center;font-size:0.72rem;font-weight:700;margin-top:2px;color:#ffd740;';
+    wrap.appendChild(counter);
+  }
+  const parts = [];
+  if (counts.star   > 0) parts.push(counts.star   + 'x⭐');
+  if (counts.trophy > 0) parts.push(counts.trophy + 'x🏆');
+  if (counts.medal  > 0) parts.push(counts.medal  + 'x🥇');
+  counter.textContent = parts.join(' ');
+}
+
+function removeRemote(socketId) {
+  if (socketId === teacherSocketId) {
+    teacherSocketId = null;
+    const img = document.getElementById(`vimg-${getIdentity(socketId)}`);
+    if (img) img.remove();
+    document.getElementById('left-video').style.display = 'block';
+    document.getElementById('left-label').textContent = 'Waiting for teacher...';
+    const nameAbove = document.getElementById('teacher-name-above');
+    if (nameAbove) nameAbove.style.display = 'none';
+  }
+  // Find identity for this socketId
+  const identity = studentSlots[socketId];
+  if (identity) {
+    // Only remove the slot if no other active socketId maps to this identity
+    const otherActive = Object.keys(studentSlots).find(k => k !== socketId && studentSlots[k] === identity);
+    if (!otherActive) {
+      const wrap = document.getElementById(`wrap-${identity}`);
+      if (wrap) wrap.remove();
+      const drawBtn = document.getElementById(`draw-btn-${socketId}`);
+      if (drawBtn) drawBtn.remove();
+    }
+    delete studentSlots[socketId];
+  }
+  delete remoteRoles[socketId];
+  delete remoteNames[socketId];
+  removeAudioPeer(socketId);
+  removeVideoPeer(socketId);
+}
+
+// ── TODAY'S ASSIGNMENT & TIMER ──
+let todayAssignments = [];
+let timerInterval = null;
+
+async function loadTodayAssignment() {
+  if (IS_SPECTATOR) return;
+  try {
+    const res = await fetch(`${SERVER_URL}/today-assignment/${ROOM}`, { headers: { Authorization: `Bearer ${MY_TOKEN}` } });
+    todayAssignments = await res.json();
+    if (IS_TEACHER) {
+    const ctrl = document.getElementById('right-panel-controls');
+    if (ctrl) ctrl.style.display = 'flex';
+    document.getElementById('reactions-panel').style.display = 'block';
+    document.getElementById('tool-laser').style.display = 'inline-flex';
+    document.getElementById('reward-selector').style.display = 'flex';
+    checkTeacherRoomLock();
+  } else {
+    const leaveBtn = document.getElementById('leave-btn');
+    if (leaveBtn) leaveBtn.style.display = 'none';
+    checkStudentAccess();
+  }
+  } catch(e) {}
+}
+
+function getDuration(ct) {
+  if (!ct) return 30;
+  if (ct === 'Trial') return 15;
+  const mm = String(ct).match(/(\d+)\s*min/i); return mm ? parseInt(mm[1],10) : 30;
+}
+
+function nowGDL() {
+  // Extract time parts directly from Guadalajara locale string
+  // Using new Date(localeString) is broken — it re-interprets the string as local time
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Mexico_City',
+    hour: 'numeric', minute: 'numeric', second: 'numeric',
+    hour12: false, year: 'numeric', month: 'numeric', day: 'numeric'
+  }).formatToParts(now);
+  const get = type => parseInt(parts.find(p => p.type === type).value);
+  // Build a date object with Guadalajara's actual h/m/s values
+  const gdl = new Date(now);
+  gdl.setHours(get('hour') % 24, get('minute'), get('second'), 0);
+  return gdl;
+}
+
+function t2m(t) { if (!t) return 0; const [h,m] = t.split(':').map(Number); return h*60+m; }
+
+function fmtTime12(t) { if (!t) return ''; const [h,m] = t.split(':'); const hr=parseInt(h),ap=hr>=12?'PM':'AM'; return `${hr%12||12}:${m} ${ap}`; }
+
+function checkTeacherRoomLock() {
+  const now = nowGDL();
+  const nowMins = now.getHours()*60 + now.getMinutes();
+  const openBtn = document.getElementById('open-class-btn');
+  const enterBtn = document.getElementById('enter-btn');
+  if (!openBtn) return;
+
+  // No assignments today — block teacher
+  if (!todayAssignments.length) {
+    if (enterBtn) {
+      enterBtn.disabled = true;
+      enterBtn.style.opacity = '0.4';
+      enterBtn.style.cursor = 'not-allowed';
+    }
+    openBtn.disabled = true; openBtn.style.opacity = '0.5';
+    setBtnLabel(openBtn, '🔒 No class today');
+    document.getElementById('connect-msg').textContent = '📅 No classes scheduled for today';
+    return;
+  }
+
+  const sorted = todayAssignments.map(a => ({...a, sm: t2m(a.time), em: t2m(a.time)+getDuration(a.classType)})).sort((a,b)=>a.sm-b.sm);
+  const current = sorted.find(a => nowMins >= a.sm-20 && nowMins < a.em);
+  if (current) {
+    openBtn.disabled=false; openBtn.style.opacity='1';
+    setBtnLabel(openBtn, classIsOpen ? '🔒 Close Class' : '🔓 Open Class');
+    syncOpenClassBtnVisibility();
+    openBtn.title='';
+    if (enterBtn) { enterBtn.style.display='block'; enterBtn.disabled=false; enterBtn.style.opacity='1'; enterBtn.style.cursor='pointer'; enterBtn.title=''; }
+    startTimer(current);
+    // Fetch debt for this assignment so debt counter knows when to stop
+    if (window._minutesOwed === undefined) {
+      if (current.groupId) {
+        // Group class — fetch group debt
+        fetch(`${SERVER_URL}/groups/${current.groupId}/debt`, { headers: { Authorization: `Bearer ${MY_TOKEN}` } })
+          .then(r => r.json())
+          .then(d => { window._minutesOwed = d.debtMins || 0; })
+          .catch(() => { window._minutesOwed = 0; });
+      } else if (current.classType && current.classType.includes('1v1') && current.studentName) {
+        // 1v1 class — fetch this specific student's debt directly
+        fetch(`${SERVER_URL}/student-debt?room=${encodeURIComponent(ROOM)}&name=${encodeURIComponent(current.studentName)}`, { headers: { Authorization: `Bearer ${MY_TOKEN}` } })
+          .then(r => r.json())
+          .then(d => { window._minutesOwed = d.debtMins || 0; })
+          .catch(() => { window._minutesOwed = 0; });
+      } else {
+        window._minutesOwed = 0;
+      }
+    }
+    // If already past start time and class not open yet, auto-open
+    const nowMins = nowGDL().getHours()*60 + nowGDL().getMinutes();
+    if (nowMins >= current.sm && !classIsOpen) {
+      classIsOpen = true;
+      setBtnLabel(openBtn, '🔒 Close Class'); openBtn.style.background = '#e53935';
+      if (window._socket) window._socket.emit('class-opened', { room: ROOM });
+    }
+    syncOpenClassBtnVisibility();
+  } else {
+    const next = sorted.find(a => a.sm-20 > nowMins);
+    if (next) {
+      const uh = Math.floor((next.sm-20)/60), um = (next.sm-20)%60;
+      const uStr = fmtTime12(`${String(uh).padStart(2,'0')}:${String(um).padStart(2,'0')}`);
+      openBtn.disabled=true; openBtn.style.opacity='0.5';
+      setBtnLabel(openBtn, `🔒 Opens at ${uStr}`); openBtn.title=`Room opens at ${uStr}`;
+      // Show enter button but disable it — room is locked
+      if (enterBtn) {
+        enterBtn.style.display='block';
+        enterBtn.disabled=true;
+        enterBtn.style.opacity='0.4';
+        enterBtn.style.cursor='not-allowed';
+        enterBtn.title=`Room opens at ${uStr}`;
+      }
+      document.getElementById('connect-msg').textContent = `🔒 Next class opens at ${uStr}`;
+    } else {
+      // No upcoming class — allow entry
+      openBtn.disabled=false; openBtn.style.opacity='1';
+      if (enterBtn) enterBtn.style.display='block';
+    }
+  }
+}
+
+function startTimer(assignment) {
+  if (timerInterval) clearInterval(timerInterval);
+  const timerEl = document.getElementById('class-timer');
+  if (timerEl) timerEl.style.display='block';
+  const duration = getDuration(assignment.classType);
+  const warnAt = duration - 10;
+  let autoOpened = false;
+  let classStartedEmitted = false;
+  let owedTimerStarted = false;
+  let owedSecs = 0;
+  window._assignmentStartMins = t2m(assignment.time);
+
+  // Only check owed timer ONCE — on the very first startTimer call
+  // If startTimer is called again (e.g. student joins, timer-info re-fires) we skip this
+  if (IS_TEACHER && !window._owedTimerChecked) {
+    window._owedTimerChecked = true;
+    const schedStart = t2m(assignment.time);
+
+    // If server sent back the original teacherLoginAt, use that to calculate lateness
+    // This way reconnects don't recalculate based on reconnect time
+    let lateBy;
+    if (window._originalLoginAt) {
+      const loginDate = new Date(window._originalLoginAt);
+      const gdlStr = loginDate.toLocaleString('en-US', { timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+      const parts = gdlStr.split(':').map(Number);
+      const loginMins = (parts[0] % 24) * 60 + parts[1] + parts[2] / 60;
+      lateBy = loginMins - schedStart;
+      if (lateBy > 720) lateBy -= 1440;
+      if (lateBy < -720) lateBy += 1440;
+    } else {
+      const nowCheck = nowGDL();
+      lateBy = nowCheck.getHours()*60 + nowCheck.getMinutes() + nowCheck.getSeconds()/60 - schedStart;
+    }
+
+    if (lateBy > 2) {
+      owedSecs = Math.round(lateBy * 60);
+      showLateWarning('LATE', owedSecs);
+      startOwedTimer(owedSecs, duration);
+      owedTimerStarted = true;
+    }
+  }
+
+  timerInterval = setInterval(() => {
+    const now = nowGDL();
+    const nowMins = now.getHours()*60 + now.getMinutes() + now.getSeconds()/60;
+    let elapsed = nowMins - t2m(assignment.time);
+    // Handle midnight crossover — if diff is more than 12 hours off, adjust
+    if (elapsed < -720) elapsed += 1440;
+    if (elapsed > 720) elapsed -= 1440;
+
+    if (elapsed < 0) {
+      const s = Math.round(-elapsed*60), mm=Math.floor(s/60), ss=s%60;
+      timerEl.textContent=`-${mm}:${String(ss).padStart(2,'0')}`; timerEl.style.color='#a0c4ff'; return;
+    }
+
+    // Timer hit 0 — official class start
+    if (!classStartedEmitted) {
+      classStartedEmitted = true;
+      if (IS_TEACHER && window._socket) window._socket.emit('class-started', { room: ROOM });
+    }
+
+    // Auto-open class when timer hits 0
+    if (IS_TEACHER && !autoOpened && !classIsOpen && elapsed >= 0) {
+      autoOpened = true; classIsOpen = true;
+      const btn = document.getElementById('open-class-btn');
+      setOpenClassBtn('🔒 Close Class', '#e53935');
+      syncOpenClassBtnVisibility();
+      if (window._socket) window._socket.emit('class-opened', { room: ROOM });
+    }
+
+    // Owed timer already started at page load if teacher was late
+
+    const em=Math.floor(elapsed), es=Math.floor((elapsed%1)*60);
+    timerEl.textContent=`${em}:${String(es).padStart(2,'0')}`;
+    timerEl.style.color = elapsed>=duration ? '#e53935' : elapsed>=warnAt ? '#ffd740' : '#69f0ae';
+
+    // Debt payoff counter — starts after class duration ends
+    // Total owed = previous group/student debt + THIS class's disconnects + lateness
+    if (IS_TEACHER && elapsed >= duration) {
+      const overMins = elapsed - duration;
+      const fullMinsOver = Math.floor(overMins);
+      const debtEl = document.getElementById('debt-payoff-timer');
+
+      // Calculate total owed: previous group/student debt + confirmed disconnect mins + any active disconnect
+      const prevDebt = window._minutesOwed || 0;
+      const confirmedDisconnects = window._totalDisconnectMins || 0;
+      const totalOwed = prevDebt + confirmedDisconnects;
+
+      if (debtEl && totalOwed > 0) {
+        const cappedMins = Math.min(fullMinsOver, totalOwed);
+        const om = Math.floor(overMins), os = Math.floor((overMins % 1) * 60);
+        debtEl.style.display = 'block';
+        if (window._studentsOnline === false) {
+          // Nobody is connected: the debt clock stops, and nothing is reported as paid until a student is back.
+          debtEl.textContent = `⏸ Debt paused — no student online`;
+          debtEl.style.color = '#ffd740';
+          debtEl.style.border = '1px solid #ffd740';
+          debtEl.style.background = 'rgba(255,215,64,0.12)';
+        } else if (cappedMins >= totalOwed) {
+          debtEl.textContent = `🏅 Debt paid! +${totalOwed} min`;
+          debtEl.style.color = '#00c853';
+          debtEl.style.border = '1px solid #00c853';
+          debtEl.style.background = 'rgba(0,200,83,0.15)';
+        } else {
+          debtEl.textContent = `🏅 +${om}:${String(os).padStart(2,'0')} paying debt (${cappedMins}/${totalOwed} min)`;
+        }
+        window._debtPayoffMins = cappedMins;
+        // Stamp debt payoff on server every full minute so it persists even if browser closes.
+        // The server only credits minutes with a student online, so this is just the claim.
+        if (IS_TEACHER && window._socket && window._studentsOnline !== false && cappedMins > (window._lastStampedDebtMins || 0)) {
+          window._lastStampedDebtMins = cappedMins;
+          window._socket.emit('debt-payoff-update', { room: ROOM, debtPayoffMins: cappedMins, sessionId: SESSION_ID });
+        }
+      } else if (debtEl && totalOwed === 0) {
+        debtEl.style.display = 'none';
+      }
+    }
+  }, 1000);
+  if (IS_TEACHER && window._socket) window._socket.emit('timer-info', { room: ROOM, assignment });
+}
+
+function checkStudentAccess() {
+  if (!todayAssignments.length) return;
+  const now = nowGDL();
+  const nowMins = now.getHours()*60 + now.getMinutes();
+  const GDL = 'America/Mexico_City';
+  const sorted = todayAssignments.map(a => ({...a, sm: t2m(a.time), em: t2m(a.time)+getDuration(a.classType)})).sort((a,b)=>a.sm-b.sm);
+  const statusBox = document.getElementById('waiting-status-box');
+  const countdown = document.getElementById('waiting-countdown');
+  const schedBtn  = document.getElementById('my-schedule-btn');
+  const current = sorted.find(a => nowMins >= a.sm-5 && nowMins < a.em);
+  if (current) { startTimer(current); schedBtn.style.display='block'; return; }
+  const upcoming = sorted.find(a => a.sm-5 > nowMins);
+  const past     = [...sorted].reverse().find(a => nowMins >= a.em);
+  if (upcoming) {
+    const st = convertStudentTime(upcoming.time, GDL);
+    statusBox.innerHTML=`⏰ Your class starts at <strong>${st}</strong> <span style="font-size:0.75rem;color:#a0c4ff;">(Guadalajara Time)</span>`;
+    schedBtn.style.display='block';
+    const iv = setInterval(() => {
+      const n=nowGDL(), nm=n.getHours()*60+n.getMinutes()+n.getSeconds()/60;
+      const left=Math.round((upcoming.sm-5-nm)*60);
+      if (left<=0) { clearInterval(iv); statusBox.innerHTML='⏳ Waiting for teacher to open the class...'; countdown.style.display='none'; startTimer(upcoming); return; }
+      const mm=Math.floor(left/60),ss=left%60;
+      countdown.textContent=`Room opens in ${mm}:${String(ss).padStart(2,'0')}`; countdown.style.display='block';
+    }, 1000);
+  } else if (past) {
+    const et = convertStudentTime(past.time, GDL, getDuration(past.classType));
+    statusBox.innerHTML=`❌ Your class ended at <strong>${et}</strong> <span style="font-size:0.75rem;color:#a0c4ff;">(Guadalajara Time)</span>`;
+    statusBox.style.background='rgba(229,57,53,0.15)';
+    schedBtn.style.display='block';
+  }
+}
+
+function convertStudentTime(time24, tz, addMins=0) {
+  if (!time24) return '';
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
+  const dt = new Date(`${today}T${time24}:00-06:00`);
+  dt.setMinutes(dt.getMinutes()+addMins);
+  return dt.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', timeZone: 'America/Mexico_City', hour12:true });
+}
+
+async function showStudentSchedule() {
+  const popup = document.getElementById('student-schedule-popup');
+  const list  = document.getElementById('student-schedule-list');
+  const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  list.innerHTML='<div style="color:#888;text-align:center;">Loading...</div>';
+  popup.style.display='flex';
+  try {
+    const res = await fetch(`${SERVER_URL}/assignments?room=${ROOM}`);
+    const assignments = await res.json();
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
+    const upcoming = assignments.filter(a => a.date >= today).sort((a,b) => a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+    if (!upcoming.length) { list.innerHTML='<div style="color:#888;text-align:center;">No upcoming classes.</div>'; return; }
+    list.innerHTML = upcoming.map(a => {
+      const st = convertStudentTime(a.time, userTz);
+      const et = convertStudentTime(a.time, userTz, getDuration(a.classType));
+      return `<div style="background:#0f3460;border-radius:10px;padding:12px 16px;margin-bottom:8px;">
+        <div style="font-weight:900;color:#a0c4ff;">📅 ${a.date}</div>
+        <div style="font-size:0.9rem;color:white;margin-top:4px;">🕐 ${st} – ${et}</div>
+        <div style="font-size:0.8rem;color:#888;margin-top:2px;">Level ${a.level} · ${a.classType}</div>
+      </div>`;
+    }).join('');
+  } catch(e) { list.innerHTML='<div style="color:#e53935;">Could not load schedule.</div>'; }
+}
+
+function newClass() {
+  if (!confirm('Start a NEW class? This will kick all current students out and clear drawings.')) return;
+  const toRemove = canvas.getObjects().filter(obj => !obj.data?.locked);
+  toRemove.forEach(obj => canvas.remove(obj));
+  canvas.renderAll();
+  if (window._socket) { window._socket.emit('whiteboard-clear', { room: ROOM }); window._socket.emit('new-class', { room: ROOM }); }
+}
+
+function startVideoCapture(socket) {
+  // Show local stream directly — no JPEG frames, pure WebRTC
+  const leftVid = document.getElementById('left-video');
+  if (leftVid && localStream) { leftVid.srcObject = localStream; leftVid.muted = true; }
+  // Monkey images still needed for mute/cam-off overlay
+  window._monkeyImg  = new Image(); window._monkeyImg.src  = 'nosee.png';
+  window._monkeyImg2 = new Image(); window._monkeyImg2.src = 'noseeandhear.png';
+}
+
+function startAudioRelayOld(socket) {
+  if (!localStream) return;
+  try {
+    mediaRecorder = new MediaRecorder(new MediaStream(localStream.getAudioTracks()), { mimeType: 'audio/webm;codecs=opus' });
+    mediaRecorder.ondataavailable = async (e) => { if (e.data.size > 0 && myMicOn && window._socket) { const buf = await e.data.arrayBuffer(); window._socket.emit('audio-chunk', { room: ROOM, chunk: Array.from(new Uint8Array(buf)) }); } };
+    mediaRecorder.start(200);
+  } catch(e) {}
+}
+
+// ── AUTO-ENTER ──
+// The class is already open when a student reaches the Welcome screen, and the server already
+// counts them as present. A student must not be able to sit on this screen all class, so after
+// 30 seconds they are put into the class automatically.
+const AUTO_ENTER_SECS = 30;
+let _autoEnterTimer = null;
+
+// ── Teacher Help menu → support tickets ──
+let _help = { kind: null, students: null, busy: false };
+function _hEsc(t) { return String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function _hBtn(label, fn, color) { return `<button onclick="${fn}" style="display:block;width:100%;margin:6px 0;padding:12px;border:none;border-radius:10px;background:${color || '#0f3460'};color:white;font:700 0.95rem Nunito,sans-serif;cursor:pointer;text-align:left;">${label}</button>`; }
+function _hSet(title, html) { document.getElementById('help-title').textContent = title; document.getElementById('help-body').innerHTML = html; }
+function openHelp() { if (!IS_TEACHER) return; _help = { kind: null, students: null, busy: false }; helpHome(); document.getElementById('help-modal').style.display = 'flex'; }
+function closeHelp() { document.getElementById('help-modal').style.display = 'none'; }
+function helpHome() { _hSet('Help', _hBtn('🧑‍🎓 Student Help', 'helpStudentMenu()') + _hBtn('🛠️ Technical Help', "helpPick('tech_help')", '#6a1b9a')); }
+function helpStudentMenu() { _hSet('Student Help', _hBtn('🚫 Student not here', "helpPick('student_absent')", '#e65100') + _hBtn('⚠️ Student having problems', "helpPick('student_problem')", '#f9a825') + '<button onclick="helpHome()" style="margin-top:6px;border:none;background:none;color:#555;cursor:pointer;">← Back</button>'); }
+async function helpPick(kind) {
+  _help.kind = kind;
+  _hSet(kind === 'tech_help' ? 'Technical Help' : 'Which student?', '<p style="color:#555;">Loading…</p>');
+  try {
+    const q = SESSION_ID ? '&sessionId=' + encodeURIComponent(SESSION_ID) : '';
+    const r = await fetch(`${SERVER_URL}/teacher/class-roster?room=${encodeURIComponent(ROOM)}${q}`, { headers: { Authorization: `Bearer ${MY_TOKEN}` } });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.message || 'error');
+    _help.students = d.students || [];
+  } catch (e) { _help.students = []; }
+  const list = _help.students.map((s, i) => _hBtn(_hEsc(s.fullName || s.name), `helpSend(${i})`, '#0f3460')).join('');
+  if (kind === 'tech_help') {
+    _hSet('Technical Help', '<p style="margin:0 0 6px;color:#555;">Is this about a specific student?</p>' + list + _hBtn('No specific student', 'helpSend(-1)', '#6a1b9a') + '<button onclick="helpHome()" style="border:none;background:none;color:#555;cursor:pointer;">← Back</button>');
+  } else if (!_help.students.length) {
+    _hSet('Which student?', '<p style="color:#c62828;">No students are scheduled for this class.</p><button onclick="helpStudentMenu()" style="border:none;background:none;color:#555;cursor:pointer;">← Back</button>');
+  } else {
+    _hSet('Which student?', list + '<button onclick="helpStudentMenu()" style="border:none;background:none;color:#555;cursor:pointer;">← Back</button>');
+  }
+}
+async function helpSend(i) {
+  if (_help.busy) return; _help.busy = true;
+  const st = i >= 0 ? _help.students[i] : null;
+  _hSet('Sending…', '<p style="color:#555;">One moment…</p>');
+  let msg, good = false;
+  try {
+    const r = await fetch(`${SERVER_URL}/teacher/support-ticket`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${MY_TOKEN}` }, body: JSON.stringify({ kind: _help.kind, studentName: st ? st.name : undefined, sessionId: SESSION_ID || undefined }) });
+    const d = await r.json();
+    if (d.success) { good = true; msg = d.duplicate ? 'Already reported — thank you, the team has it.' : (_help.kind === 'tech_help' ? 'Tech support has been notified.' : 'Reported. The office has been notified.'); }
+    else msg = d.message || 'Could not send. Please try again.';
+  } catch (e) { msg = 'Connection problem. Please try again.'; }
+  _help.busy = false;
+  _hSet(good ? '✅ Done' : '⚠️ Not sent', `<p style="font-size:1rem;">${_hEsc(msg)}</p>` + _hBtn('Close', 'closeHelp()', good ? '#2e7d32' : '#555'));
+}
+
+function startAutoEnterCountdown() {
+  if (IS_TEACHER) return;
+  clearInterval(_autoEnterTimer);
+  const btn = document.getElementById('enter-btn');
+  let note = document.getElementById('auto-enter-note');
+  if (!note) {
+    note = document.createElement('p');
+    note.id = 'auto-enter-note';
+    note.style.cssText = 'color:#a0c4ff;font-family:Nunito,sans-serif;font-size:1rem;font-weight:700;text-align:center;margin-top:16px;';
+    btn.insertAdjacentElement('afterend', note);
+  }
+  let left = AUTO_ENTER_SECS;
+  const paint = () => {
+    setBtnLabel(btn, `▶ Enter Class (${left})`);
+    note.textContent = `Entrarás a la clase automáticamente en ${left} s · Entering class automatically in ${left} s`;
+  };
+  paint();
+  _autoEnterTimer = setInterval(() => {
+    left--;
+    const screen = document.getElementById('connecting-screen');
+    if (!screen || screen.style.display === 'none') { clearInterval(_autoEnterTimer); return; }
+    if (left <= 0) { clearInterval(_autoEnterTimer); window._autoEntered = true; enterClass(); return; }
+    paint();
+  }, 1000);
+}
+function stopAutoEnterCountdown() {
+  clearInterval(_autoEnterTimer); _autoEnterTimer = null;
+  const note = document.getElementById('auto-enter-note'); if (note) note.remove();
+  const btn = document.getElementById('enter-btn'); if (btn) setBtnLabel(btn, '▶ Enter Class');
+}
+
+// Browsers may block sound (and fullscreen) until the person touches the page. After an
+// automatic entry, or whenever the teacher's audio is blocked, show one big banner: any tap
+// anywhere turns the sound on and goes fullscreen.
+function showSoundUnlock() {
+  if (IS_TEACHER || document.getElementById('sound-unlock')) return;
+  const b = document.createElement('div');
+  b.id = 'sound-unlock';
+  b.style.cssText = 'position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:99999;background:#e53935;color:white;font-family:Nunito,sans-serif;font-weight:900;font-size:1.2rem;padding:14px 26px;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,0.4);cursor:pointer;text-align:center;';
+  b.innerHTML = '🔊 Toca aquí para escuchar a tu maestro<br><span style="font-size:0.9rem;font-weight:700;">Tap here to hear your teacher</span>';
+  document.body.appendChild(b);
+  const unlock = () => {
+    document.querySelectorAll('audio').forEach(a => { try { a.play().catch(() => {}); } catch (e) {} });
+    try { if (_audioCtx && _audioCtx.state === 'suspended') _audioCtx.resume(); } catch (e) {}
+    document.documentElement.requestFullscreen().catch(() => {});
+    const el = document.getElementById('sound-unlock'); if (el) el.remove();
+    document.removeEventListener('pointerdown', unlock, true);
+    document.removeEventListener('keydown', unlock, true);
+  };
+  document.addEventListener('pointerdown', unlock, true);
+  document.addEventListener('keydown', unlock, true);
+}
+
+// 👁 N next to the room number: how many spectators are watching (hidden when none). Shown to everyone in the room.
+function updateSpectatorEye(count) {
+  const label = document.getElementById('room-label'); if (!label) return;
+  let eye = document.getElementById('spectator-eye');
+  if (!count) { if (eye) eye.remove(); return; }
+  if (!eye) { eye = document.createElement('span'); eye.id = 'spectator-eye'; eye.style.cssText = 'margin-left:10px;padding-left:10px;border-left:1px solid rgba(255,255,255,0.45);'; label.appendChild(eye); }
+  eye.textContent = `👁 ${count}`;
+  eye.title = count === 1 ? '1 spectator watching' : `${count} spectators watching`;
+}
+
+function enterClass() {
+  stopAutoEnterCountdown();
+  if (!IS_TEACHER && window._autoEntered) showSoundUnlock();
+  if (!IS_TEACHER && !IS_SPECTATOR) document.documentElement.requestFullscreen().catch(() => {});
+  document.getElementById('connecting-screen').style.display = 'none';
+  document.getElementById('room-label').style.background = '#2e7d32';
+  initWhiteboard(_joinedSocket);
+  startVideoCapture(_joinedSocket);
+  startAudioRelay(_joinedSocket);
+  Object.keys(remoteRoles).forEach(sid => {
+    if (IS_TEACHER) {
+      setTimeout(() => callAudioPeer(sid, _joinedSocket), 500);
+      setTimeout(() => callVideoPeer(sid, _joinedSocket), 800);
+    } else if (remoteRoles[sid] === 'teacher' || IS_SPECTATOR) {
+      setTimeout(() => callAudioPeer(sid, _joinedSocket), 500);
+      // Students don't start the video call with the teacher (the teacher does); the watchdog asks again if it never shows
+      if (IS_SPECTATOR) setTimeout(() => callVideoPeer(sid, _joinedSocket), 800);
+    }
+  });
+  loadTodayAssignment();
+  if (IS_SPECTATOR && !document.getElementById('spectator-exit')) {
+    const b = document.createElement('button');
+    b.id = 'spectator-exit';
+    b.textContent = IS_IT ? '👁 Tech Support · Exit' : '👁 Spectator · Exit / Salir';
+    b.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:9000;background:rgba(15,52,96,0.92);color:#fff;border:1px solid #a0c4ff;border-radius:12px;padding:8px 14px;font-family:Nunito,sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;';
+    b.onclick = () => { try { if (window._socket) window._socket.disconnect(); } catch (e) {} window.location.href = TECH_MODE ? 'techsupport.html' : 'login.html'; };
+    document.body.appendChild(b);
+  }
+  if (IS_TEACHER) {
+    const newBtn = document.getElementById('new-class-btn');
+    if (newBtn) newBtn.style.display = 'block';
+  }
+}
+
+function updateMonkey(socketId) {
+  const wrap = document.getElementById(`wrap-${getIdentity(socketId)}`); if (!wrap) return;
+  const slot = document.getElementById(`slot-${getIdentity(socketId)}`); if (!slot) return;
+  let monkey = slot.querySelector('.monkey-overlay');
+  if (!monkey) { monkey = document.createElement('img'); monkey.className = 'monkey-overlay'; monkey.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;display:none;'; slot.appendChild(monkey); }
+  const camBtn = wrap.querySelector('.cam-student-btn');
+  const muteBtn = wrap.querySelector('.mute-student-btn');
+  const camOff = camBtn && camBtn.dataset.camoff === 'true';
+  const muted = muteBtn && muteBtn.textContent.includes('Unmute');
+  if (camOff && muted) { monkey.src = 'noseeandhear.png'; monkey.style.display = 'block'; }
+  else if (camOff) { monkey.src = 'nosee.png'; monkey.style.display = 'block'; }
+  else { monkey.style.display = 'none'; }
+}
+
+// Once the class is open there's no reason to close it — the teacher uses
+// "End Class" instead. Hiding it prevents accidentally kicking everyone out
+// by misclicking it (it sits right next to Clear All).
+function syncOpenClassBtnVisibility() {
+  const btn = document.getElementById('open-class-btn');
+  if (!btn) return;
+  btn.style.display = classIsOpen ? 'none' : '';
+}
+
+function setOpenClassBtn(text, color) {
+  const btn = document.getElementById('open-class-btn');
+  if (!btn) return;
+  btn.style.background = color;
+  // Preserve the waiting-badge span (count + visibility) across text changes
+  let badge = document.getElementById('waiting-badge');
+  const savedCount = badge ? badge.textContent : '';
+  const savedDisplay = badge ? badge.style.display : 'none';
+  // Set only the text node, not the whole content, to avoid destroying the badge
+  setBtnLabel(btn, text);
+  badge = document.getElementById('waiting-badge');
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.id = 'waiting-badge';
+    badge.style.cssText = 'display:none;position:absolute;top:-8px;right:-8px;background:#e53935;color:white;border-radius:50%;width:22px;height:22px;font-size:0.7rem;font-weight:900;align-items:center;justify-content:center;line-height:22px;text-align:center;z-index:10;';
+    btn.appendChild(badge);
+  }
+  // Restore count + visibility
+  badge.textContent = savedCount;
+  badge.style.display = savedDisplay;
+}
+
+// Set a button's text label while preserving any child badge span
+function setBtnLabel(btn, text) {
+  const badge = btn.querySelector('#waiting-badge, #chat-badge');
+  // Remove all text/element nodes except the badge
+  [...btn.childNodes].forEach(n => { if (n !== badge) btn.removeChild(n); });
+  // Insert the new label as the first child (before the badge)
+  btn.insertBefore(document.createTextNode(text), badge || null);
+}
+
+let _breaksRemaining = 3;
+let _breakCountdownInterval = null;
+
+function openBreakModal() {
+  if (!IS_TEACHER) return;
+  document.getElementById('break-modal-remaining').textContent =
+    _breaksRemaining > 0 ? `${_breaksRemaining} break${_breaksRemaining===1?'':'s'} remaining this class` : 'No breaks remaining this class';
+  document.getElementById('break-modal').style.display = 'flex';
+}
+
+function startBreak(mins) {
+  document.getElementById('break-modal').style.display = 'none';
+  if (window._socket) window._socket.emit('start-break', { room: ROOM, sessionId: SESSION_ID, durationMins: mins });
+}
+
+function resumeFromBreak() {
+  if (!IS_TEACHER) return;
+  if (window._socket) window._socket.emit('end-break', { room: ROOM, sessionId: SESSION_ID });
+}
+
+function showBreakScreen(durationMins) {
+  document.getElementById('break-resume-btn').style.display = IS_TEACHER ? 'block' : 'none';
+  document.getElementById('break-screen').style.display = 'flex';
+  // This countdown is informational only - it does NOT auto-resume. The
+  // teacher decides when to come back; the real duration used for pay is
+  // whatever the server actually timestamps, not this display.
+  let secsLeft = durationMins * 60;
+  const el = document.getElementById('break-countdown');
+  clearInterval(_breakCountdownInterval);
+  const tick = () => {
+    if (secsLeft <= 0) { el.textContent = 'Any moment now...'; return; }
+    const m = Math.floor(secsLeft / 60), s = secsLeft % 60;
+    el.textContent = `${m}:${String(s).padStart(2,'0')}`;
+    secsLeft--;
+  };
+  tick();
+  _breakCountdownInterval = setInterval(tick, 1000);
+}
+
+function hideBreakScreen() {
+  clearInterval(_breakCountdownInterval);
+  document.getElementById('break-screen').style.display = 'none';
+}
+
+function toggleClassOpen() {
+  classIsOpen = !classIsOpen;
+  const btn = document.getElementById('open-class-btn');
+  if (classIsOpen) { setOpenClassBtn('🔒 Close Class', '#e53935'); if (window._socket) window._socket.emit('class-opened', { room: ROOM }); }
+  else { setOpenClassBtn('🔓 Open Class', '#2e7d32'); if (window._socket) { window._socket.emit('class-closed', { room: ROOM }); window._socket.emit('record-class-end', { room: ROOM }); } }
+  syncOpenClassBtnVisibility();
+}
+
+function toggleMic() {
+  if (!localStream) return;
+  myMicOn = !myMicOn;
+  localStream.getAudioTracks().forEach(t => t.enabled = myMicOn);
+  const overlay = document.getElementById('mic-overlay');
+  if (overlay) {
+    overlay.textContent = myMicOn ? '🔊' : '🔇';
+    overlay.style.background = myMicOn ? 'rgba(0,0,0,0.5)' : 'rgba(229,57,53,0.85)';
+  }
+  document.getElementById('my-mute-icon').style.display = myMicOn ? 'none' : 'flex';
+}
+
+function toggleCam() {
+  if (!localStream) return;
+  myCamOn = !myCamOn;
+  localStream.getVideoTracks().forEach(t => t.enabled = myCamOn);
+  const logo = document.getElementById('cam-off-logo');
+  if (logo) logo.style.display = myCamOn ? 'none' : 'flex';
+  if (window._socket) window._socket.emit('teacher-cam', { room: ROOM, camOn: myCamOn });
+}
+
+function toggleDrawByName(socketId, name, lbl) {
+  const isGreen = lbl.style.background.includes('46, 125, 50') || lbl.style.background === 'rgb(46, 125, 50)' || lbl.style.background === '#2e7d32';
+  const canDraw = !isGreen; // if currently green (allowed), disable; if red (disabled), enable
+  lbl.style.background = canDraw ? '#2e7d32' : '#e53935';
+  if (window._socket) window._socket.emit('toggle-student-draw', { room: ROOM, targetId: socketId, canDraw });
+}
+
+let _allMuted = false;
+let _allCamOff = false;
+
+function toggleMuteAll() {
+  _allMuted = !_allMuted;
+  const btn = document.getElementById('spk-all-btn');
+  btn.textContent = _allMuted ? '🔇 All' : '🔊 All';
+  btn.style.background = _allMuted ? '#e53935' : '#0f3460';
+  Object.keys(studentSlots).forEach(socketId => {
+    if (socketId === '__self__') return;
+    if (window._socket) window._socket.emit('mute-student', { room: ROOM, targetId: socketId, mute: _allMuted });
+    const spk = document.getElementById(`spk-${getIdentity(socketId)}`);
+    if (spk) { spk.textContent = _allMuted ? '🔇' : '🔊'; spk.style.background = _allMuted ? 'rgba(229,57,53,0.85)' : 'rgba(0,0,0,0.5)'; }
+  });
+}
+
+function toggleCamAll() {
+  _allCamOff = !_allCamOff;
+  const btn = document.getElementById('cam-all-btn');
+  btn.textContent = _allCamOff ? '🚫 All' : '📷 All';
+  btn.style.background = _allCamOff ? '#e53935' : '#0f3460';
+  Object.keys(studentSlots).forEach(socketId => {
+    if (socketId === '__self__') return;
+    if (window._socket) window._socket.emit('toggle-student-cam', { room: ROOM, targetId: socketId, camOn: !_allCamOff });
+    const vid = document.getElementById(`vimg-${getIdentity(socketId)}`);
+    if (vid) vid.dataset.camOff = String(_allCamOff);
+    updateStudentMonkey(socketId);
+  });
+}
+
+function updateStudentMonkey(socketId) {
+  const slot = document.getElementById(`slot-${getIdentity(socketId)}`);
+  if (!slot) return;
+  const camOff = document.getElementById(`vimg-${getIdentity(socketId)}`)?.dataset?.camOff === 'true';
+  const spk = document.getElementById(`spk-${getIdentity(socketId)}`);
+  const micOff = spk?.textContent === '🔇';
+  let monkey = slot.querySelector('.monkey-placeholder');
+  if (camOff) {
+    if (!monkey) {
+      monkey = document.createElement('img');
+      monkey.className = 'monkey-placeholder';
+      monkey.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#1a1a2e;z-index:3;border-radius:10px;';
+      slot.appendChild(monkey);
+    }
+    monkey.src = (camOff && micOff) ? 'noseeandhear.png' : 'nosee.png';
+  } else {
+    if (monkey) monkey.remove();
+  }
+}
+
+function toggleStudentCamClick(socketId) {
+  const vid = document.getElementById(`vimg-${getIdentity(socketId)}`);
+  const camOff = vid?.dataset?.camOff === 'true';
+  const newCamOn = camOff;
+  if (vid) vid.dataset.camOff = String(!newCamOn);
+  if (window._socket) window._socket.emit('toggle-student-cam', { room: ROOM, targetId: socketId, camOn: newCamOn });
+  updateStudentMonkey(socketId);
+}
+
+function toggleStudentMicOverlay(socketId) {
+  const spk = document.getElementById(`spk-${getIdentity(socketId)}`);
+  if (!spk) return;
+  const isMuted = spk.textContent === '🔇';
+  const newMuted = !isMuted;
+  spk.textContent = newMuted ? '🔇' : '🔊';
+  spk.style.background = newMuted ? 'rgba(229,57,53,0.85)' : 'rgba(0,0,0,0.5)';
+  if (window._socket) window._socket.emit('mute-student', { room: ROOM, targetId: socketId, mute: newMuted });
+  updateStudentMonkey(socketId);
+}
+
+function muteAll() {
+  const slots = Object.keys(studentSlots);
+  slots.forEach(socketId => {
+    if (socketId === '__self__') return;
+    if (window._socket) window._socket.emit('mute-student', { room: ROOM, targetId: socketId, mute: true });
+    // Update button state
+    const wrap = document.getElementById(`wrap-${getIdentity(socketId)}`);
+    if (wrap) {
+      const btn = wrap.querySelector('.mute-student-btn');
+      if (btn) btn.textContent = '🔊 Unmute';
+    }
+  });
+}
+
+function muteStudent(socketId) {
+  const wrap = document.getElementById(`wrap-${getIdentity(socketId)}`);
+  const btn = wrap ? wrap.querySelector('.mute-student-btn') : null;
+  let muting = true;
+  if (btn) { const isMuted = btn.textContent.includes('Unmute'); muting = !isMuted; btn.textContent = isMuted ? '🔇 Mute' : '🔊 Unmute'; }
+  if (window._socket) window._socket.emit('mute-student', { room: ROOM, targetId: socketId, mute: muting });
+  updateMonkey(socketId);
+}
+
+function toggleStudentCam(socketId, btn) {
+  const isOff = btn.dataset.camoff === 'true';
+  btn.dataset.camoff = !isOff;
+  btn.textContent = !isOff ? '📷 Show' : '🚫 Cam';
+  if (window._socket) window._socket.emit('toggle-student-cam', { room: ROOM, targetId: socketId, camOn: isOff });
+  updateMonkey(socketId);
+}
+
+function muteAll() {
+  Object.keys(studentSlots).forEach(id => {
+    if (id === '__self__') return;
+    if (window._socket) window._socket.emit('mute-student', { room: ROOM, targetId: id, mute: true });
+    const w = document.getElementById(`wrap-${id}`);
+    if (w) { const b = w.querySelector('.mute-student-btn'); if (b) b.textContent = '🔊 Unmute'; }
+  });
+}
+
+let currentRewardType = 'star';
+const REWARD_EMOJI = { star: '⭐', trophy: '🏆', medal: '🥇' };
+const rewardCounts = {}; // { socketId: { star: 0, trophy: 0, medal: 0 } }
+
+function setRewardType(type) {
+  currentRewardType = type;
+  ['star','trophy','medal'].forEach(t => {
+    const btn = document.getElementById(`reward-${t}-btn`);
+    if (btn) btn.style.border = t === type ? '2px solid #ffd740' : '2px solid transparent';
+  });
+}
+
+function giveStar(socketId, name) {
+  // 5 second cooldown per student
+  const btnId = `star-btn-${socketId}`;
+  const btn = document.getElementById(btnId);
+  if (btn && btn.disabled) return;
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; setTimeout(() => { btn.disabled = false; btn.style.opacity = '1'; }, 5000); }
+  const type = currentRewardType;
+  const emoji = REWARD_EMOJI[type];
+  if (!rewardCounts[socketId]) rewardCounts[socketId] = { star: 0, trophy: 0, medal: 0 };
+
+  // Increment FIRST, then emit the up-to-date counts
+  rewardCounts[socketId][type]++;
+  const updatedCounts = { ...rewardCounts[socketId] };
+  if (window._socket) window._socket.emit('give-star', { room: ROOM, name, socketId, type, emoji, counts: updatedCounts });
+
+  updateRewardCounter(socketId);
+  playTadaSound();
+  showStarCelebration(name, emoji);
+}
+
+function updateRewardCounter(socketId) {
+  const wrap = document.getElementById(`wrap-${getIdentity(socketId)}`);
+  if (!wrap) return;
+  let counter = wrap.querySelector('.star-counter');
+  if (!counter) {
+    counter = document.createElement('div');
+    counter.className = 'star-counter';
+    counter.style.cssText = 'text-align:center;font-size:0.72rem;font-weight:700;margin-top:2px;';
+    wrap.appendChild(counter);
+  }
+  const c = rewardCounts[socketId] || { star:0, trophy:0, medal:0 };
+  const parts = [];
+  if (c.star > 0)   parts.push(`${c.star}x⭐`);
+  if (c.trophy > 0) parts.push(`${c.trophy}x🏆`);
+  if (c.medal > 0)  parts.push(`${c.medal}x🥇`);
+  counter.textContent = parts.join(' ');
+}
+
+function playTadaSound() {
+  try {
+    const ctx = getAudioCtx();
+    const notes = [523, 659, 784, 1047, 784, 1047];
+    notes.forEach((freq, i) => {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = freq; o.type = 'sine';
+      const t = ctx.currentTime + i * 0.08;
+      g.gain.setValueAtTime(0.25, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+      o.start(t); o.stop(t + 0.15);
+    });
+  } catch(e) {}
+}
+
+function toggleLeaderboard() {
+  const panel = document.getElementById('leaderboard-panel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function renderLeaderboard(stars) {
+  const list = document.getElementById('leaderboard-list');
+  const entries = Object.entries(stars).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) { list.innerHTML = '<div style="color:#aaa;text-align:center;">No stars yet!</div>'; return; }
+  list.innerHTML = entries.map(([name, count], i) => {
+    const c = typeof count === 'object' ? count : { star: count, trophy: 0, medal: 0 };
+    const total = (c.star||0) + (c.trophy||0) + (c.medal||0);
+    const parts = [];
+    if (c.star > 0)   parts.push(`${c.star}x⭐`);
+    if (c.trophy > 0) parts.push(`${c.trophy}x🏆`);
+    if (c.medal > 0)  parts.push(`${c.medal}x🥇`);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.07);">
+      <span style="font-weight:700;color:${i===0?'#ffd740':i===1?'#c0c0c0':i===2?'#cd7f32':'#a0c4ff'};">${i+1}. ${escapeHtml(name)}</span>
+      <span style="font-size:0.85rem;">${parts.join(' ')}</span>
+    </div>`;
+  }).join('');
+
+  // Update reward counters on all video slots
+  document.querySelectorAll('.student-wrap').forEach(wrap => {
+    const label = wrap.querySelector('.student-label-below');
+    if (!label) return;
+    const name = label.textContent.trim().replace(/\s*\(You\)$/, '');
+    const socketId = wrap.id?.replace('wrap-','');
+    if (socketId && rewardCounts[socketId]) updateRewardCounter(socketId);
+  });
+}
+
+function showStarCelebration(name, emoji) {
+  emoji = emoji || '⭐';
+  const overlay = document.getElementById('star-overlay');
+  const nameEl = document.getElementById('star-name');
+  const canvas = document.getElementById('confetti-canvas');
+  nameEl.innerHTML = `${emoji} Great job, ${escapeHtml(name)}! ${emoji}`;
+  nameEl.style.animation = 'none'; nameEl.offsetHeight; nameEl.style.animation = 'starPop 0.6s ease-out forwards';
+  overlay.style.display = 'flex';
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const colors = ['#ffd740','#ff6b6b','#69f0ae','#40c4ff','#e040fb','#ff9800','#fff'];
+  const pieces = Array.from({length: 150}, () => ({
+    x: Math.random() * canvas.width, y: -20, r: Math.random() * 8 + 3,
+    d: Math.random() * 80 + 20, color: colors[Math.floor(Math.random()*colors.length)],
+    tilt: Math.random()*10-5, tiltAngle: 0, tiltSpeed: Math.random()*0.1+0.05
+  }));
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      ctx.beginPath(); ctx.lineWidth = p.r; ctx.strokeStyle = p.color;
+      ctx.moveTo(p.x+p.tilt+p.r/4, p.y); ctx.lineTo(p.x+p.tilt, p.y+p.tilt+p.r/4); ctx.stroke();
+      p.tiltAngle += p.tiltSpeed; p.y += (Math.cos(frame/10+p.d)+p.r/4)*3; p.tilt = Math.sin(p.tiltAngle)*12;
+      if (p.y > canvas.height) { p.y = -20; p.x = Math.random()*canvas.width; }
+    });
+    frame++;
+    if (frame < 200) requestAnimationFrame(draw);
+    else { ctx.clearRect(0,0,canvas.width,canvas.height); overlay.style.display = 'none'; }
+  }
+  draw();
+}
+
+function showStudentCoin(isHeads) {
+  // Show coin overlay with animation on student side
+  const overlay = document.getElementById('coin-overlay');
+  const coin = document.getElementById('coin-flip');
+  const result = document.getElementById('coin-result');
+  coin.style.animation = 'none';
+  result.style.opacity = '0';
+  result.textContent = '';
+  overlay.style.display = 'flex';
+  setTimeout(() => {
+    coin.style.animation = `${isHeads ? 'flipHeads' : 'flipTails'} 3s ease-out forwards`;
+    setTimeout(() => {
+      result.textContent = isHeads ? '🦅 Eagle!' : '🤪 Silly Face!';
+      result.style.opacity = '1';
+      setTimeout(() => { overlay.style.display = 'none'; }, 3000);
+    }, 3100);
+  }, 50);
+}
+
+function showStudentDice(values, total, count) {
+  _diceCount = count;
+  const overlay = document.getElementById('dice-overlay');
+  const container = document.getElementById('dice-containers');
+  const label = document.getElementById('dice-result-label');
+  container.innerHTML = '';
+  label.style.opacity = '0';
+  overlay.style.display = 'flex';
+
+  values.forEach((val, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'dice-container';
+    const cube = document.createElement('div');
+    cube.className = 'dice-cube';
+    cube.id = `dice-cube-student-${i}`;
+    cube.innerHTML = DICE_FACE_HTML;
+    // Same smooth spin as teacher - extra spins + landing rotation
+    const rot = DICE_ROTATIONS[val - 1];
+    const extraX = 3 * 360;
+    const extraY = 3 * 360;
+    cube.style.transition = 'transform 2s ease-out';
+    setTimeout(() => {
+      cube.style.transform = `rotateX(${rot.x + extraX}deg) rotateY(${rot.y + extraY}deg)`;
+    }, 50);
+    wrap.appendChild(cube);
+    container.appendChild(wrap);
+  });
+
+  document.getElementById('dice-result-num').textContent = count === 1 ? total : `${values.join(' + ')} = ${total}`;
+  setTimeout(() => { label.style.opacity = '1'; }, 2200);
+  setTimeout(() => { overlay.style.display = 'none'; }, 5200);
+}
+
+// ── COIN FLIP & DICE ──
+function showResultOnCanvas(text, sub) {
+  const el = document.createElement('div');
+  el.style.cssText = `position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:rgba(22,33,62,0.95);color:white;border-radius:20px;padding:24px 36px;text-align:center;
+    pointer-events:none;z-index:99999;font-family:Nunito,sans-serif;
+    box-shadow:0 8px 40px rgba(0,0,0,0.5);transition:opacity 0.3s;`;
+  el.innerHTML = `<div style="font-size:3.5rem;">${text}</div><div style="font-size:1.1rem;font-weight:700;margin-top:8px;color:#a0c4ff;">${sub}</div>`;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
+}
+
+function broadcastResult(text, sub, type, extra) {
+  if (IS_TEACHER && window._socket) window._socket.emit('show-result', { room: ROOM, text, sub, type, extra });
+}
+
+let _coinFlipping = false;
+
+function flipCoin() {
+  if (_coinFlipping) return;
+  _coinFlipping = true;
+  const overlay = document.getElementById('coin-overlay');
+  const coin = document.getElementById('coin-flip');
+  const result = document.getElementById('coin-result');
+  coin.style.animation = 'none';
+  coin.className = '';
+  result.style.opacity = '0';
+  result.textContent = '';
+  overlay.style.display = 'flex';
+}
+
+function doFlipCoin() {
+  const coin = document.getElementById('coin-flip');
+  const result = document.getElementById('coin-result');
+  const isHeads = Math.random() <= 0.5;
+  coin.style.animation = 'none';
+  result.style.opacity = '0';
+  // Broadcast immediately so student sees it at same time
+  if (window._socket) window._socket.emit('show-result', { room: ROOM, text: isHeads ? '🦅' : '🤪', sub: isHeads ? 'Eagle!' : 'Silly Face!', type: 'coin', extra: { isHeads } });
+  setTimeout(() => {
+    coin.style.animation = `${isHeads ? 'flipHeads' : 'flipTails'} 3s ease-out forwards`;
+    setTimeout(() => {
+      result.textContent = isHeads ? '🦅 Eagle!' : '🤪 Silly Face!';
+      result.style.opacity = '1';
+      setTimeout(() => { document.getElementById('coin-overlay').style.display = 'none'; _coinFlipping = false; }, 3000);
+    }, 3100);
+  }, 50);
+}
+
+function closeCoinOnBg(e) {
+  if (e.target === document.getElementById('coin-overlay')) {
+    document.getElementById('coin-overlay').style.display = 'none';
+    _coinFlipping = false;
+    // Reset coin animation so it works again next time
+    const coin = document.getElementById('coin-flip');
+    const result = document.getElementById('coin-result');
+    if (coin) { coin.style.animation = 'none'; coin.className = ''; }
+    if (result) { result.style.opacity = '0'; result.textContent = ''; }
+  }
+}
+
+const DICE_FACE_HTML = `
+  <div class="dice-face-front"><span class="ddot ddot1"></span></div>
+  <div class="dice-face-back"><span class="ddot ddot1"></span><span class="ddot ddot2"></span></div>
+  <div class="dice-face-right"><span class="ddot ddot1"></span><span class="ddot ddot2"></span><span class="ddot ddot3"></span></div>
+  <div class="dice-face-left"><span class="ddot ddot1"></span><span class="ddot ddot2"></span><span class="ddot ddot3"></span><span class="ddot ddot4"></span></div>
+  <div class="dice-face-top"><span class="ddot ddot1"></span><span class="ddot ddot2"></span><span class="ddot ddot3"></span><span class="ddot ddot4"></span><span class="ddot ddot5"></span></div>
+  <div class="dice-face-bottom"><span class="ddot ddot1"></span><span class="ddot ddot2"></span><span class="ddot ddot3"></span><span class="ddot ddot4"></span><span class="ddot ddot5"></span><span class="ddot ddot6"></span></div>`;
+
+// Map face rotations to values: front=1, back=2, right=3, left=4, top=5, bottom=6
+const DICE_ROTATIONS = [
+  { x:0,   y:0   }, // front  = 1
+  { x:180, y:0   }, // back   = 2
+  { x:0,   y:-90 }, // right  = 3
+  { x:0,   y:90  }, // left   = 4
+  { x:-90, y:0   }, // top    = 5
+  { x:90,  y:0   }, // bottom = 6
+];
+
+let _diceCount = 1;
+let _diceRolling = false;
+
+function openDice(count) {
+  if (_diceRolling) return;
+  _diceCount = count;
+  const overlay = document.getElementById('dice-overlay');
+  const container = document.getElementById('dice-containers');
+  const label = document.getElementById('dice-result-label');
+  container.innerHTML = '';
+  label.style.opacity = '0';
+  overlay.style.display = 'flex';
+
+  // Create dice
+  for (let i = 0; i < count; i++) {
+    const wrap = document.createElement('div');
+    wrap.className = 'dice-container';
+    const cube = document.createElement('div');
+    cube.className = 'dice-cube';
+    cube.id = `dice-cube-${i}`;
+    cube.innerHTML = DICE_FACE_HTML;
+    cube.onclick = () => rollDice3D();
+    wrap.appendChild(cube);
+    container.appendChild(wrap);
+  }
+}
+
+function rollDice3D() {
+  if (_diceRolling) return;
+  _diceRolling = true;
+  const results = [];
+  for (let i = 0; i < _diceCount; i++) {
+    const val = Math.floor(Math.random() * 6);
+    results.push(val);
+    const cube = document.getElementById(`dice-cube-${i}`);
+    const rot = DICE_ROTATIONS[val];
+    const extraX = (Math.floor(Math.random()*3)+2) * 360;
+    const extraY = (Math.floor(Math.random()*3)+2) * 360;
+    cube.style.transition = 'transform 2s ease-out';
+    cube.style.transform = `rotateX(${rot.x + extraX}deg) rotateY(${rot.y + extraY}deg)`;
+  }
+  const values = results.map(r => r+1);
+  const total = values.reduce((a,b) => a+b, 0);
+  // Broadcast immediately so student animates at same time
+  if (window._socket) window._socket.emit('show-result', { room: ROOM, text: `🎲`, sub: _diceCount === 1 ? `Rolled a ${total}!` : `Total: ${total}!`, type: 'dice', extra: { values, total, count: _diceCount } });
+  setTimeout(() => {
+    document.getElementById('dice-result-num').textContent = _diceCount === 1 ? total : `${values.join(' + ')} = ${total}`;
+    document.getElementById('dice-result-label').style.opacity = '1';
+    setTimeout(() => { document.getElementById('dice-overlay').style.display = 'none'; _diceRolling = false; }, 3000);
+  }, 2200);
+}
+
+function closeDice() {
+  document.getElementById('dice-overlay').style.display = 'none';
+}
+
+function closeDiceOnBg(e) {
+  if (e.target === document.getElementById('dice-overlay')) closeDice();
+}
+
+// ── REACTIONS ──
+const REACTION_SOUNDS = {
+  '😂': [523, 659, 784, 1047],
+  '❤️': [440, 554, 659],
+  '😊': [523, 659, 784],
+  '😢': [440, 415, 392],
+  '😱': [200, 400, 800],
+  '🎉': [523, 659, 784, 1047, 784, 1047],
+  '👏': null,
+  '👍': [523, 659],
+};
+
+// Special burst emojis for certain reactions
+const REACTION_BURST = {
+  '❤️': ['❤️','💕','💖','💗','💓','🌸','💝'],
+  '😱': ['😱','❗','😱','❗','😱','🔴','❗'],
+  '🎉': ['🎉'],
+};
+
+const CONFETTI_COLORS = ['#ff4444','#ff9800','#ffeb3b','#4caf50','#2196f3','#9c27b0','#e91e63','#00bcd4','#ff69b4','#7fff00'];
+
+// Single global particle system
+let _particles = [];
+let _particleRAF = null;
+
+function showReaction(emoji) {
+  playReactionSound(emoji);
+
+  // Simple guaranteed display - no animation dependency
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:8rem;pointer-events:none;z-index:99999;';
+  el.textContent = emoji;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2000);
+
+  const container = document.getElementById('whiteboard-wrap');
+  const rawRect = container ? container.getBoundingClientRect() : null;
+  const rect = (rawRect && rawRect.width > 0) ? rawRect : { left:0, top:0, bottom:window.innerHeight, width:window.innerWidth, height:window.innerHeight };
+
+  const isSad = emoji === '😢';
+  const burst = REACTION_BURST[emoji] || [emoji];
+  // On student side use full screen so we don't depend on canvas position
+  const useRect = IS_TEACHER ? rect : { left:0, top:0, bottom:window.innerHeight, width:window.innerWidth, height:window.innerHeight };
+
+  function spawnFloating(text, size, zIndex) {
+    const el = document.createElement('div');
+    el.style.position = 'fixed';
+    el.style.pointerEvents = 'none';
+    el.style.zIndex = zIndex || '9999';
+    el.style.fontSize = size;
+    el.style.left = (useRect.left + Math.random() * useRect.width) + 'px';
+    el.style.top = useRect.bottom + 'px';
+    el.textContent = text;
+    document.body.appendChild(el);
+    el.getBoundingClientRect(); // force reflow
+    el.style.animation = `floatUp ${2+Math.random()}s ease-out forwards`;
+    setTimeout(() => el.remove(), 3500);
+  }
+
+  function spawnFalling(text, size, zIndex) {
+    const el = document.createElement('div');
+    el.style.position = 'fixed';
+    el.style.pointerEvents = 'none';
+    el.style.zIndex = zIndex || '9999';
+    el.style.fontSize = size;
+    el.style.left = (useRect.left + Math.random() * useRect.width) + 'px';
+    el.style.top = useRect.top + 'px';
+    el.textContent = text;
+    document.body.appendChild(el);
+    el.getBoundingClientRect(); // force reflow
+    el.style.animation = `fallDown ${1+Math.random()}s ease-in forwards`;
+    setTimeout(() => el.remove(), 2500);
+  }
+
+  if (isSad) {
+    for (let i = 0; i < 10; i++) setTimeout(() => spawnFloating('😢', `${5+Math.random()*3}rem`), i * 100);
+    for (let i = 0; i < 40; i++) setTimeout(() => spawnFalling('💧', `${0.8+Math.random()*0.8}rem`, '9997'), i * 20);
+    return;
+  }
+
+  for (let i = 0; i < 12; i++) {
+    setTimeout(() => {
+      const pick = burst[Math.floor(Math.random()*burst.length)];
+      spawnFloating(pick, `${5+Math.random()*3}rem`);
+    }, i * 80);
+  }
+
+  if (emoji === '🎉' && !window._confettiRAF) {
+    const W = window.innerWidth, H = window.innerHeight;
+    const overlay = document.createElement('canvas');
+    overlay.style.cssText = `position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:9998;`;
+    overlay.width = W; overlay.height = H;
+    document.body.appendChild(overlay);
+    const ctx = overlay.getContext('2d');
+    const pieces = Array.from({length: 300}, () => ({
+      x: Math.random() * W, y: -20 - Math.random() * H,
+      vy: 3 + Math.random() * 5, vx: (Math.random() - 0.5) * 3,
+      size: 6 + Math.random() * 8,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+      rot: Math.random() * 360, rotV: (Math.random() - 0.5) * 8,
+      round: Math.random() > 0.5
+    }));
+    let frame = 0;
+    function drawFrame() {
+      ctx.clearRect(0, 0, W, H);
+      // Fade out in last 30 frames
+      const opacity = frame > 130 ? 1 - (frame - 130) / 30 : 1;
+      ctx.globalAlpha = opacity;
+      pieces.forEach(p => {
+        p.y += p.vy; p.x += p.vx; p.rot += p.rotV;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot * Math.PI / 180);
+        ctx.fillStyle = p.color;
+        if (p.round) { ctx.beginPath(); ctx.arc(0, 0, p.size/2, 0, Math.PI*2); ctx.fill(); }
+        else ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2);
+        ctx.restore();
+        if (p.y > H + 20) { p.y = -20; p.x = Math.random() * W; }
+      });
+      frame++;
+      if (frame < 160) window._confettiRAF = requestAnimationFrame(drawFrame);
+      else { window._confettiRAF = null; overlay.remove(); }
+    }
+    window._confettiRAF = requestAnimationFrame(drawFrame);
+  }
+}
+
+function playReactionSound(emoji) {
+  if (emoji === '👏') {
+    // Triple clap pattern: clap clap clap ... clap clap clap
+    const clapTimes = [0, 150, 300, 700, 850, 1000];
+    clapTimes.forEach(delay => setTimeout(() => playReactionSoundOnce('👏'), delay));
+  } else {
+    playReactionSoundOnce(emoji);
+    setTimeout(() => playReactionSoundOnce(emoji), 600);
+  }
+}
+
+// Shared AudioContext — mobile browsers limit how many can be created
+let _audioCtx = null;
+function getAudioCtx() {
+  if (!_audioCtx || _audioCtx.state === 'closed') {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+
+function playReactionSoundOnce(emoji) {
+  try {
+    const ctx = getAudioCtx();
+    const notes = REACTION_SOUNDS[emoji];
+    if (!notes) {
+      const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i/data.length);
+      const source = ctx.createBufferSource(); source.buffer = buffer;
+      const gain = ctx.createGain(); gain.gain.value = 0.3;
+      source.connect(gain); gain.connect(ctx.destination); source.start();
+      return;
+    }
+    notes.forEach((freq, i) => {
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = freq; o.type = 'sine';
+      const t = ctx.currentTime + i * 0.1;
+      g.gain.setValueAtTime(0.2, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+      o.start(t); o.stop(t + 0.2);
+    });
+  } catch(e) {}
+}
+
+function sendReaction(emoji) {
+  // Gray out button for 3 seconds to prevent spam
+  const btns = document.querySelectorAll('.reaction-btn');
+  btns.forEach(b => { b.disabled = true; b.style.opacity = '0.4'; });
+  setTimeout(() => btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; }), 3000);
+
+  showReaction(emoji);
+  if (window._socket) window._socket.emit('reaction', { room: ROOM, emoji });
+}
+
+function leaveClass() {
+  if (!IS_TEACHER) {
+    if (window._socket) window._socket.emit('student-leaving', { room: ROOM, name: NAME });
+    setTimeout(() => {
+      if (captureInterval) clearInterval(captureInterval);
+      if (window._socket) window._socket.disconnect();
+      window.location.href = 'login.html';
+    }, 300);
+    return;
+  }
+  document.getElementById('leave-modal').style.display = 'flex';
+}
+
+function teacherBRB() { document.getElementById('leave-modal').style.display = 'none'; if (captureInterval) clearInterval(captureInterval); if (window._socket) window._socket.disconnect(); window.location.href = 'login.html'; }
+function teacherEndClass() {
+  document.getElementById('leave-modal').style.display = 'none';
+  const debtPayoffMins = window._debtPayoffMins || 0;
+  if (window._socket) window._socket.emit('end-class', { room: ROOM, debtPayoffMins, sessionId: SESSION_ID });
+  // Store end time for greeting page to display
+  const endTime = new Date().toLocaleTimeString('en-US', { timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit', hour12: true });
+  localStorage.setItem('lastClassEndedAt', endTime);
+  // Wait 2 seconds to ensure server fully processes end-class before disconnecting
+  setTimeout(() => {
+    if (captureInterval) clearInterval(captureInterval);
+    if (window._socket) window._socket.disconnect();
+    window.location.href = 'greeting.html';
+  }, 2000);
+}
+
+// ── WebRTC Screenshare (peer-to-peer, zero server bandwidth) ──
+const ssPeers = {}; // studentSocketId -> RTCPeerConnection
+let screenStream = null; let isSharing = false;
+
+async function toggleScreenShare() {
+  if (isSharing) { stopScreenShare(); return; }
+  try {
+    // audio: true lets the teacher tick "Share tab audio" (Chrome tab) / "Share system audio" so students hear the video too
+    try {
+      screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: 'always' }, audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }, systemAudio: 'include' });
+    } catch (err) {
+      if (err && err.name === 'NotAllowedError') throw err;
+      // Browser doesn't accept the audio options (e.g. some Safari/Firefox): share video only
+      screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: 'always' }, audio: false });
+    }
+    isSharing = true;
+    if (!screenStream.getAudioTracks().length) showShareAudioTip();
+
+    const btn = document.getElementById('screenshare-btn');
+    if (btn) { btn.textContent = '🛑 Stop Sharing'; btn.style.background = '#e53935'; }
+
+    // Show teacher's own screen behind canvas
+    showScreenBehindCanvas(screenStream, true);
+
+    // Notify students and call each connected student peer
+    if (window._socket) {
+      window._socket.emit('screenshare-start', { room: ROOM });
+      // Call each currently connected student
+      Object.keys(studentSlots).forEach(sid => callSsPeer(sid));
+      (window._spectatorIds || []).forEach(sid => callSsPeer(sid));
+    }
+
+    screenStream.getVideoTracks()[0].onended = () => stopScreenShare();
+  } catch(e) { if (e.name !== 'NotAllowedError') alert('Could not start screen share: ' + e.message); }
+}
+
+async function callSsPeer(studentId) {
+  if (ssPeers[studentId]) { ssPeers[studentId].close(); delete ssPeers[studentId]; }
+  const pc = new RTCPeerConnection(ICE_CONFIG);
+  ssPeers[studentId] = pc;
+  screenStream.getTracks().forEach(t => pc.addTrack(t, screenStream));
+  pc.onicecandidate = (e) => { if (e.candidate) window._socket.emit('ss-ice', { to: studentId, candidate: e.candidate }); };
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  window._socket.emit('ss-offer', { to: studentId, offer: pc.localDescription });
+}
+
+function stopScreenShare() {
+  isSharing = false;
+  if (screenStream) { screenStream.getTracks().forEach(t => t.stop()); screenStream = null; }
+  Object.keys(ssPeers).forEach(id => { ssPeers[id].close(); delete ssPeers[id]; });
+
+  // Remove screenshare display
+  const sc = document.getElementById('screenshare-img'); if (sc) sc.remove();
+  const vid = document.getElementById('screenshare-vid'); if (vid) vid.remove();
+  if (canvas) { canvas.backgroundColor = '#ffffff'; canvas.renderAll(); }
+  const cc = document.querySelector('.canvas-container'); if (cc) cc.style.zIndex = '';
+
+  // Re-apply draw restrictions
+  if (window._studentDrawStates) {
+    window._studentDrawStates.forEach((canDraw, socketId) => {
+      if (!canDraw && window._socket) window._socket.emit('toggle-student-draw', { room: ROOM, targetId: socketId, canDraw: false });
+    });
+  }
+
+  const btn = document.getElementById('screenshare-btn');
+  if (btn) { btn.textContent = '🖥️ Share Screen'; btn.style.background = '#6a1b9a'; }
+  if (window._socket) {
+    window._socket.emit('screenshare-stop', { room: ROOM });
+    setTimeout(() => { if (canvas) window._socket.emit('whiteboard-sync', { room: ROOM, json: canvas.toJSON(['data']) }); }, 300);
+  }
+}
+
+// Shown when the teacher shared without audio: tells them how to include it
+function showShareAudioTip() {
+  const old = document.getElementById('share-audio-tip'); if (old) old.remove();
+  const d = document.createElement('div'); d.id = 'share-audio-tip';
+  d.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#fff3e0;color:#e65100;border:2px solid #e65100;border-radius:12px;padding:10px 16px;font-family:Nunito,sans-serif;font-weight:800;font-size:0.85rem;z-index:99999;max-width:90vw;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.25);';
+  d.innerHTML = '🔇 Students can\'t hear this share. To share sound: stop, press Share Screen again, choose a <b>Chrome Tab</b> and tick <b>"Also share tab audio"</b>.<br><span style="font-weight:600;">Los alumnos no oyen el audio. Elige una <b>pestaña de Chrome</b> y marca <b>"Compartir audio de la pestaña"</b>.</span> <button onclick="this.parentNode.remove()" style="margin-left:8px;border:none;background:#e65100;color:#fff;border-radius:6px;padding:2px 8px;cursor:pointer;font-weight:900;">OK</button>';
+  document.body.appendChild(d); setTimeout(() => d.remove(), 20000);
+}
+
+function showScreenBehindCanvas(stream, isTeacher) {
+  const wrap = document.getElementById('whiteboard-wrap');
+  // Use a video element — no encoding/decoding, no frames, native browser rendering
+  let vid = document.getElementById('screenshare-vid');
+  if (!vid) {
+    vid = document.createElement('video');
+    vid.id = 'screenshare-vid';
+    vid.autoplay = true; vid.playsInline = true; vid.muted = true;
+    vid.style.cssText = `position:absolute;top:0;left:0;width:${CANVAS_W}px;height:${CANVAS_H}px;z-index:20;display:block;background:#1a1a2e;transform-origin:top left;object-fit:fill;`;
+    wrap.appendChild(vid);
+    scaleCanvas();
+  }
+  vid.muted = !!isTeacher;
+  vid.srcObject = stream;
+  const pr = vid.play(); if (pr && pr.catch) pr.catch(() => { vid.muted = true; vid.play().catch(() => {}); });
+  // Make fabric canvas transparent and raise above video
+  const cc = document.querySelector('.canvas-container');
+  if (cc) { cc.style.zIndex = '25'; cc.style.position = 'absolute'; }
+  if (canvas) { canvas.backgroundColor = 'transparent'; canvas.renderAll(); }
+}
+
+const CANVAS_W = 1440, CANVAS_H = 810;
+let canvas, currentTool = 'draw', suppressSync = false;
+
+function applyDrawPermission(canDraw) {
+  console.log('[DRAW-PERM]', 'applyDrawPermission called with canDraw =', canDraw, '| canvas exists:', !!canvas);
+  if (!canvas) { console.warn('[DRAW-PERM] canvas not ready yet, permission will apply on init'); return; }
+  canvas.isDrawingMode = canDraw;
+  canvas.selection = canDraw;
+  canvas.forEachObject(obj => { obj.selectable = canDraw; obj.evented = canDraw; });
+  canvas.discardActiveObject();
+  canvas.renderAll();
+
+  // Directly disable pointer events on Fabric's own canvas elements —
+  // Fabric manages its own stacking context (.canvas-container, upper-canvas)
+  // so a generic overlay div can end up underneath it. Disabling pointer-events
+  // on Fabric's actual DOM elements is the reliable way to block all interaction.
+  const upperCanvas = canvas.upperCanvasEl;
+  const lowerCanvas = canvas.lowerCanvasEl;
+  const containerEl = upperCanvas ? upperCanvas.closest('.canvas-container') : null;
+  [upperCanvas, lowerCanvas, containerEl].forEach(el => {
+    if (el) el.style.pointerEvents = canDraw ? 'auto' : 'none';
+  });
+
+  // Belt-and-suspenders: also keep the DOM overlay blocker as a backup
+  let blocker = document.getElementById('canvas-draw-blocker');
+  if (!canDraw) {
+    if (!blocker) {
+      blocker = document.createElement('div');
+      blocker.id = 'canvas-draw-blocker';
+      blocker.style.cssText = 'position:absolute;inset:0;z-index:999;cursor:not-allowed;pointer-events:auto;';
+      const wrap = document.getElementById('whiteboard-wrap');
+      if (wrap) { wrap.style.position = 'relative'; wrap.appendChild(blocker); }
+    }
+    blocker.style.display = 'block';
+  } else {
+    if (blocker) blocker.style.display = 'none';
+  }
+
+  const toolbar = document.getElementById('toolbar');
+  if (toolbar) { toolbar.style.opacity = canDraw ? '1' : '0.4'; toolbar.style.pointerEvents = canDraw ? 'auto' : 'none'; }
+  if (!canDraw && currentTool === 'draw') currentTool = null;
+}
+
+function initWhiteboard(socket) {
+  if (window._whiteboardInit) return; window._whiteboardInit = true;
+  canvas = new fabric.Canvas('whiteboard-canvas', { width: CANVAS_W, height: CANVAS_H, isDrawingMode: true, backgroundColor: '#ffffff' });
+
+  // Apply draw permission immediately on init
+  if (!IS_TEACHER) applyDrawPermission(window._canDraw !== false);
+
+  canvas.on('object:added', (e) => {
+    // Only remove objects this student drew themselves. Incoming drawings from the
+    // teacher or other students arrive with suppressSync=true — those must be kept,
+    // otherwise disabling a student's pen also blanks their view of the board.
+    if (!IS_TEACHER && window._canDraw === false && !suppressSync) {
+      setTimeout(() => { canvas.remove(e.target); canvas.renderAll(); }, 0);
+    }
+  });
+  scaleCanvas(); window.addEventListener('resize', scaleCanvas); setupOwnSlot();
+  canvas.on('path:created', (e) => {
+    if (!IS_TEACHER && window._canDraw === false) {
+      canvas.remove(e.path); canvas.renderAll(); return;
+    }
+    if (suppressSync) return;
+    window._socket.emit('whiteboard-path', { room: ROOM, path: e.path.toJSON() });
+  });
+  let _syncTimer = null;
+  canvas.on('object:modified', () => {
+    if (suppressSync) return;
+    clearTimeout(_syncTimer);
+    _syncTimer = setTimeout(() => {
+      if (window._socket) window._socket.emit('whiteboard-sync', { room: ROOM, json: canvas.toJSON(['data']) });
+    }, 300);
+  });
+}
+
+function scaleCanvas() {
+  const wrap = document.getElementById('whiteboard-wrap');
+  wrap.style.width = '100%';
+  wrap.style.height = '100%';
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  const scaleW = w / CANVAS_W;
+  const scaleH = h / CANVAS_H;
+  const scale = Math.min(scaleW, scaleH);
+  const transform = `scale(${scale})`;
+  const container = document.querySelector('.canvas-container');
+  if (container) {
+    container.style.transform = transform;
+    container.style.transformOrigin = 'top left';
+    container.style.position = 'absolute';
+    container.style.top = '0';
+    container.style.left = '0';
+  }
+  const sc = document.getElementById('screenshare-vid') || document.getElementById('screenshare-img');
+  if (sc) {
+    sc.style.transform = transform;
+    sc.style.transformOrigin = 'top left';
+    sc.style.width = CANVAS_W + 'px';
+    sc.style.height = CANVAS_H + 'px';
+  }
+  wrap.style.overflow = 'hidden';
+  wrap.style.background = '#1a1a2e';
+}
+
+function showLateWarning(type, secs) {
+  const mm = Math.floor(secs/60), ss = secs % 60;
+  const timeStr = `${mm}:${String(ss).padStart(2,'0')}`;
+  // Flash warning in topbar
+  const label = document.createElement('div');
+  label.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#e53935;color:white;font-family:Nunito,sans-serif;font-size:0.9rem;font-weight:900;padding:6px 20px;border-radius:20px;z-index:9999;';
+  label.textContent = `🔴 ${type} — ${timeStr} behind schedule`;
+  document.body.appendChild(label);
+  setTimeout(() => label.remove(), 6000);
+}
+
+function startOwedTimer(owedSecsTotal, classDuration) {
+  const owedEl = document.getElementById('owed-timer');
+  if (!owedEl) return;
+  owedEl.style.display = 'block';
+  const owedMins = Math.ceil(owedSecsTotal / 60);
+  owedEl.textContent = `⏱ Late: ${owedMins} min owed`;
+  owedEl.style.color = '#e53935';
+
+  // Only start counting down AFTER the original class end time
+  const owedInterval = setInterval(() => {
+    const now = nowGDL();
+    const nowMins = now.getHours()*60 + now.getMinutes() + now.getSeconds()/60;
+    const originalEnd = window._assignmentStartMins + classDuration;
+
+    if (nowMins >= originalEnd) {
+      const secsOver = Math.round((nowMins - originalEnd) * 60);
+      const remaining = owedSecsTotal - secsOver;
+      if (remaining <= 0) {
+        owedEl.textContent = '✅ Time made up!';
+        owedEl.style.color = '#69f0ae';
+        clearInterval(owedInterval);
+        setTimeout(() => { owedEl.style.display = 'none'; }, 3000);
+        return;
+      }
+      const mm = Math.floor(remaining / 60), ss = remaining % 60;
+      owedEl.textContent = `⏱ Owed: ${mm}:${String(ss).padStart(2,'0')}`;
+    }
+  }, 1000);
+}
+
+function setTool(tool) {
+  if (!IS_TEACHER && window._canDraw === false) return;
+  // Exit laser mode if switching away
+  if (currentTool === 'laser' && tool !== 'laser') exitLaser();
+  currentTool = tool;
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById(`tool-${tool}`)?.classList.add('selected');
+  if (tool === 'draw') { canvas.isDrawingMode = true; canvas.freeDrawingBrush = new fabric.PencilBrush(canvas); canvas.freeDrawingBrush.color = document.getElementById('color-picker').value; canvas.freeDrawingBrush.width = parseInt(document.getElementById('brush-size').value); }
+  else if (tool === 'laser') { canvas.isDrawingMode = false; enterLaser(); }
+  else { canvas.isDrawingMode = false; }
+}
+
+function enterLaser() {
+  document.body.classList.add('laser-mode');
+  document.getElementById('laser-dot').style.display = 'block';
+  document.addEventListener('mousemove', onLaserMove);
+}
+
+function exitLaser() {
+  document.body.classList.remove('laser-mode');
+  document.getElementById('laser-dot').style.display = 'none';
+  document.removeEventListener('mousemove', onLaserMove);
+  if (window._socket) window._socket.emit('laser-move', { room: ROOM, x: null, y: null });
+}
+
+function onLaserMove(e) {
+  const dot = document.getElementById('laser-dot');
+  dot.style.left = e.clientX + 'px';
+  dot.style.top = e.clientY + 'px';
+  // Use Fabric's getPointer — exact same coordinate system as drawing
+  if (canvas && window._socket) {
+    const pointer = canvas.getPointer(e);
+    const w = canvas.getWidth();
+    const h = canvas.getHeight();
+    window._socket.emit('laser-move', { room: ROOM, x: pointer.x / w, y: pointer.y / h });
+  }
+}
+
+function showRemoteLaser(xRatio, yRatio) {
+  const dot = document.getElementById('laser-dot');
+  if (xRatio === null) { dot.style.display = 'none'; return; }
+  dot.style.display = 'block';
+  // Convert back using upper-canvas element bounds
+  const upperCanvas = document.querySelector('.upper-canvas');
+  if (upperCanvas) {
+    const rect = upperCanvas.getBoundingClientRect();
+    dot.style.left = (rect.left + xRatio * rect.width) + 'px';
+    dot.style.top = (rect.top + yRatio * rect.height) + 'px';
+  }
+}
+
+function setColor(c) { if (currentTool === 'draw' && canvas) canvas.freeDrawingBrush.color = c; }
+function setBrushSize(s) { if (canvas && canvas.freeDrawingBrush) canvas.freeDrawingBrush.width = parseInt(s); }
+
+function confirmClearAll() {
+  if (!IS_TEACHER) return;
+  if (confirm('⚠️ Clear Everything?\n\nThis will remove ALL drawings AND uploaded images.\nThis cannot be undone.')) {
+    canvas.clear();
+    canvas.backgroundColor = '#ffffff';
+    canvas.renderAll();
+    if (window._socket) {
+      window._socket.emit('clear-all', { room: ROOM });
+      window._socket.emit('whiteboard-sync', { room: ROOM, json: canvas.toJSON(['data']) });
+    }
+  }
+}
+
+function clearBoard() {
+  if (!IS_TEACHER) return;
+  // Only remove unlocked objects (drawings), keep locked images
+  const toRemove = canvas.getObjects().filter(obj => !obj.data?.locked);
+  toRemove.forEach(obj => canvas.remove(obj));
+  canvas.renderAll();
+  if (window._socket) window._socket.emit('whiteboard-clear', { room: ROOM });
+}
+
+// ── SLIDE RESIZE / REPOSITION (teacher only) ──
+// Slides are locked by default so drawing over them never selects them by accident.
+// This toggle temporarily unlocks them so the teacher can scale and move the slide;
+// the existing object:modified handler syncs the result to students.
+let _slideEdit = false;
+
+function getSlideObjects() {
+  if (!canvas) return [];
+  return canvas.getObjects().filter(o => o.type === 'image' && o.data && o.data.locked);
+}
+
+function lockSlide(o) {
+  o.set({ selectable: false, evented: false, lockMovementX: true, lockMovementY: true, hasControls: false, hasBorders: false });
+}
+
+function unlockSlide(o) {
+  o.set({ selectable: true, evented: true, lockMovementX: false, lockMovementY: false, hasControls: true, hasBorders: true, lockUniScaling: true });
+}
+
+// Incoming canvas states must never arrive unlocked, or students could drag the slide.
+function relockSlides() {
+  if (_slideEdit) return;
+  getSlideObjects().forEach(lockSlide);
+}
+
+function toggleSlideEdit() {
+  if (!IS_TEACHER || !canvas) return;
+  const slides = getSlideObjects();
+  const btn = document.getElementById('slide-resize-btn');
+  if (!slides.length) {
+    if (btn) { const old = btn.innerHTML; btn.innerHTML = 'No slide yet'; setTimeout(() => btn.innerHTML = old, 1500); }
+    return;
+  }
+  _slideEdit = !_slideEdit;
+  if (_slideEdit) {
+    canvas.isDrawingMode = false;
+    canvas.selection = true;
+    slides.forEach(unlockSlide);
+    canvas.setActiveObject(slides[slides.length - 1]);
+    if (btn) { btn.innerHTML = '✅ Done Resizing'; btn.style.background = '#2e7d32'; }
+  } else {
+    slides.forEach(lockSlide);
+    canvas.discardActiveObject();
+    canvas.selection = false;
+    if (btn) { btn.innerHTML = '📐 Resize Slide'; btn.style.background = '#00838f'; }
+    setTool(currentTool === 'laser' ? 'draw' : (currentTool || 'draw'));
+    if (window._socket) window._socket.emit('whiteboard-sync', { room: ROOM, json: canvas.toJSON(['data']) });
+  }
+  canvas.renderAll();
+}
+
+function uploadImage(event) {
+  if (!IS_TEACHER) return;
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    // Resize image to max 1200px before sending to avoid socket disconnect
+    const tmpImg = new Image();
+    tmpImg.onload = () => {
+      const MAX = 1200;
+      let w = tmpImg.width, h = tmpImg.height;
+      if (w > MAX || h > MAX) {
+        const ratio = Math.min(MAX/w, MAX/h);
+        w = Math.round(w * ratio); h = Math.round(h * ratio);
+      }
+      const tmpCanvas = document.createElement('canvas');
+      tmpCanvas.width = w; tmpCanvas.height = h;
+      tmpCanvas.getContext('2d').drawImage(tmpImg, 0, 0, w, h);
+      const dataUrl = tmpCanvas.toDataURL('image/jpeg', 0.75);
+      fabric.Image.fromURL(dataUrl, (img) => {
+        const scale = Math.min((CANVAS_W * 0.85) / img.width, (CANVAS_H * 0.85) / img.height);
+        img.scale(scale).set({
+          left: 40, top: 40,
+          selectable: false, evented: false,
+          lockMovementX: true, lockMovementY: true,
+          hasControls: false, hasBorders: false,
+          data: { locked: true }
+        });
+        canvas.add(img);
+        canvas.sendToBack(img); // always behind drawings
+        canvas.renderAll();
+        if (window._socket) window._socket.emit('whiteboard-image', { room: ROOM, dataUrl, scale, left: 40, top: 40 });
+      });
+    };
+    tmpImg.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+// Show help after 15s if still loading
+setTimeout(() => { const spinner = document.getElementById('spinner'); if (spinner && spinner.style.display !== 'none') { document.getElementById('connect-msg').textContent = 'Taking too long?'; document.getElementById('connect-msg').style.fontSize = '1.2rem'; } }, 15000);
+
+startMedia();
+</script>
+</body>
+</html>
+

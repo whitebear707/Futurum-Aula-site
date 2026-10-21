@@ -1,0 +1,2545 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<script src="config.js"></script>
+  <meta name="google" content="notranslate">
+  <meta charset="UTF-8"/>
+  <link rel="icon" type="image/png" href="icon.png"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aula Futura - Parent Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Nunito', sans-serif; background: #f0f4f8; min-height: 100vh; }
+    .header { background: #1a1a2e; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .header img { height: 44px; cursor: pointer; }
+    .header-title { color: white; font-size: 1.1rem; font-weight: 900; }
+    .container { max-width: 500px; margin: 40px auto; padding: 0 16px; }
+    /* The dashboard carries five tabs, so it needs more room than the login card. */
+    body.dashboard-mode .container { max-width: 760px; }
+    .card { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 16px; }
+    h2 { font-size: 1.4rem; font-weight: 900; color: #1a1a2e; margin-bottom: 6px; }
+    .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 24px; }
+    .field { margin-bottom: 14px; }
+    label { display: block; font-weight: 700; font-size: 0.85rem; color: #444; margin-bottom: 4px; }
+    input, select { width: 100%; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-family: Nunito; font-size: 0.95rem; transition: border 0.2s; }
+    input:focus, select:focus { outline: none; border-color: #1a73e8; }
+    .btn { width: 100%; padding: 13px; border: none; border-radius: 10px; font-family: Nunito; font-size: 1rem; font-weight: 900; cursor: pointer; margin-top: 8px; }
+    .btn-primary { background: #1a73e8; color: white; }
+    .btn-primary:hover { background: #1558b0; }
+    .btn-secondary { background: #f0f4f8; color: #444; border: 2px solid #e0e0e0; }
+    .btn-secondary:hover { background: #e0e0e0; }
+    .btn-link { background: none; border: none; color: #1a73e8; font-family: Nunito; font-size: 0.9rem; font-weight: 700; cursor: pointer; padding: 4px; }
+    .error { color: #e53935; font-size: 0.85rem; margin-top: 8px; padding: 8px 12px; background: #fff5f5; border-radius: 8px; display: none; }
+    .success { color: #2e7d32; font-size: 0.85rem; margin-top: 8px; padding: 8px 12px; background: #f0fff4; border-radius: 8px; display: none; }
+    .divider { text-align: center; color: #888; font-size: 0.85rem; margin: 16px 0; position: relative; }
+    .divider::before { content: ''; position: absolute; left: 0; top: 50%; width: 45%; height: 1px; background: #e0e0e0; }
+    .divider::after { content: ''; position: absolute; right: 0; top: 50%; width: 45%; height: 1px; background: #e0e0e0; }
+    .step-indicator { display: flex; gap: 8px; margin-bottom: 24px; }
+    .step { flex: 1; height: 4px; border-radius: 2px; background: #e0e0e0; }
+    .step.active { background: #1a73e8; }
+    .step.done { background: #00c853; }
+
+    /* Dashboard styles */
+    .dashboard-nav { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 2px solid #e0e0e0; margin-bottom: 24px; }
+    @media (max-width: 620px) {
+      .nav-tab { padding: 10px 9px; font-size: 0.8rem; }
+    }
+    .nav-tab { white-space: nowrap; flex: 0 0 auto; padding: 10px 12px; display: flex; align-items: center; gap: 6px; font-family: Nunito; font-size: 0.85rem; font-weight: 700; background: none; border: none; cursor: pointer; color: #888; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+    .nav-tab.active { color: #1a73e8; border-bottom-color: #1a73e8; }
+    .student-card { background: #f8f9ff; border: 2px solid #e8eeff; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .student-name { font-size: 1.1rem; font-weight: 900; color: #1a1a2e; }
+    .paid-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 900; margin-left: 8px; }
+    .paid-yes { background: #e8f5e9; color: #2e7d32; }
+    .paid-no { background: #ffebee; color: #c62828; }
+    .att-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.85rem; }
+    .att-status { padding: 2px 8px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; }
+    .att-completed { background: #e8f5e9; color: #2e7d32; }
+    .att-incomplete { background: #fff3e0; color: #e65100; }
+    .att-invalid { background: #ffebee; color: #c62828; }
+
+    /* Calendar */
+    .p-cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-top: 8px; }
+    .p-cal-day-label { text-align:center; font-size:0.7rem; font-weight:900; color:#888; padding: 4px 0; }
+    .p-cal-cell { min-height: 44px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; position: relative; }
+    .p-cal-cell.empty { background: transparent; }
+    .p-cal-cell.today { background: #e8f0fe; color: #1a73e8; }
+    .p-cal-cell.has-class { background: #1a1a2e; color: white; }
+    .p-cal-cell.has-class .star { font-size: 0.7rem; position: absolute; top: 3px; right: 4px; }
+    .p-cal-cell.past { opacity: 0.45; }
+    .resched-time-row { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap; }
+    .resched-time-row label { font-size: 0.85rem; font-weight: 700; color: #555; display: block; margin-bottom: 4px; }
+    .resched-time-row select { padding: 10px 14px; border-radius: 10px; border: 2px solid #ddd; font-family: Nunito; font-size: 0.9rem; outline: none; }
+    .resched-search-btn { padding: 10px 20px; background: #1a73e8; color: white; border: none; border-radius: 10px; font-family: Nunito; font-size: 0.9rem; font-weight: 900; cursor: pointer; }
+    .resched-cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .resched-cal-nav-btn { background: #f0f4f8; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1rem; cursor: pointer; font-weight: 900; }
+    .resched-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .resched-cal-hdr { text-align: center; font-size: 0.72rem; font-weight: 900; color: #aaa; padding: 4px 0; }
+    .resched-cal-day { aspect-ratio: 1; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; position: relative; border: 2px solid transparent; }
+    .resched-cal-day.empty, .resched-cal-day.past { color: #ccc; background: #f9f9f9; }
+    .resched-cal-day.today { border-color: #1a73e8; }
+    .resched-cal-day.green { background: #e8f5e9; color: #2e7d32; cursor: pointer; }
+    .resched-cal-day.green:hover { transform: scale(1.05); box-shadow: 0 2px 8px rgba(46,125,50,0.3); }
+    .resched-cal-day.grey { background: #f5f5f5; color: #bbb; }
+    .resched-legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+    .resched-legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; color: #555; }
+    .resched-legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+  
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="login.html"><img src="LOGO.png" alt="Aula Futura"/></a>
+  <div class="header-title"></div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button id="header-signout-btn" onclick="doLogout()" style="display:none;background:#e53935;color:white;border:none;border-radius:20px;padding:7px 16px;font-family:Nunito;font-size:0.85rem;font-weight:700;cursor:pointer;">Cerrar sesión</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- VERIFY EMAIL SCREEN -->
+  <div id="screen-verify" style="display:none;">
+    <div class="card" style="text-align:center;">
+      <div style="font-size:3rem;margin-bottom:12px;">✅</div>
+      <h2>¡Correo verificado!</h2>
+      <p class="subtitle">Tu cuenta ha sido verificada. Ya puedes iniciar sesión.</p>
+      <button class="btn btn-primary" style="margin-top:16px;" onclick="showScreen('login')">Ir a iniciar sesión</button>
+    </div>
+  </div>
+
+  <!-- LOGIN SCREEN -->
+  <div id="screen-login">
+    <div class="card">
+      <h2 style="text-align:center;">Bienvenido de nuevo</h2>
+      <p class="subtitle" style="text-align:center;">Panel de padres</p>
+      <div class="field"><label>Correo electrónico</label><input type="email" id="login-email" placeholder="your@email.com"/></div>
+      <div class="field"><label>Contraseña</label><input type="password" id="login-password" placeholder="••••••••"/></div>
+      <div id="login-error" class="error"></div>
+      <button class="btn btn-primary" onclick="doLogin()">Iniciar sesión</button>
+      <div style="text-align:center;margin-top:10px;">
+        <button class="btn-link" onclick="showScreen('forgot')">¿Olvidaste tu contraseña?</button>
+      </div>
+      <div class="divider">o</div>
+      <button class="btn btn-secondary" onclick="showScreen('register-code')">Registrarse</button>
+      <div style="text-align:center;margin-top:12px;">
+        <a href="index.html" style="color:#888;font-size:0.85rem;">← Volver al inicio</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGISTER STEP 1: CODE -->
+  <div id="screen-register-code" style="display:none;">
+    <div class="card">
+      <div class="step-indicator"><div class="step active"></div><div class="step"></div><div class="step"></div></div>
+      <h2>Ingresa el código de la escuela</h2>
+      <p class="subtitle">Ingresa el código de registro que te dio la escuela.</p>
+      <div class="field"><label>Código de registro</label><input type="text" id="reg-code" placeholder="REG-XXXXXX" style="text-transform:uppercase;letter-spacing:2px;font-size:1.1rem;text-align:center;"/></div>
+      <div id="code-error" class="error"></div>
+      <button class="btn btn-primary" onclick="validateCode()">Continuar</button>
+      <div style="text-align:center;margin-top:12px;"><button class="btn-link" onclick="showScreen('login')">← Atrás</button></div>
+    </div>
+  </div>
+
+  <!-- REGISTER STEP 1b: WHO ARE YOU REGISTERING? -->
+  <div id="screen-register-type" style="display:none;">
+    <div class="card">
+      <div class="step-indicator"><div class="step done"></div><div class="step active"></div><div class="step"></div></div>
+      <h2>¿Quién se registra?</h2>
+      <p class="subtitle">Selecciona una opción</p>
+      <button onclick="setRegType('self')" style="width:100%;padding:16px;margin-bottom:12px;background:#f0f7ff;border:2px solid #1a73e8;border-radius:12px;cursor:pointer;font-family:Nunito;font-size:1rem;font-weight:900;color:#1a73e8;text-align:left;">
+        🎓 Me registro yo mismo
+        <div style="font-size:0.8rem;font-weight:400;color:#555;margin-top:4px;">Soy estudiante adulto</div>
+      </button>
+      <button onclick="setRegType('parent')" style="width:100%;padding:16px;background:#f0fff4;border:2px solid #2e7d32;border-radius:12px;cursor:pointer;font-family:Nunito;font-size:1rem;font-weight:900;color:#2e7d32;text-align:left;">
+        👨‍👩‍👧 Registro a mi hijo/a
+        <div style="font-size:0.8rem;font-weight:400;color:#555;margin-top:4px;">Soy padre, madre o tutor</div>
+      </button>
+      <div style="text-align:center;margin-top:12px;"><button class="btn-link" onclick="showScreen('register-code')">← Atrás</button></div>
+    </div>
+  </div>
+
+  <!-- REGISTER: SELF (ADULT STUDENT) -->
+  <div id="screen-register-self" style="display:none;">
+    <div class="card">
+      <div class="step-indicator"><div class="step done"></div><div class="step done"></div><div class="step active"></div></div>
+      <h2>Tus datos</h2>
+      <p class="subtitle">Cuéntanos sobre ti</p>
+      <div class="field">
+        <label>Solo el nombre</label>
+        <input type="text" id="self-name" placeholder="Pedro" oninput="validateFirstNameOnly(this)"/>
+        <div id="self-name-warning" style="display:none;color:#e65100;font-size:0.8rem;margin-top:4px;">⚠️ Solo el nombre aquí — el apellido va abajo.</div>
+      </div>
+      <div class="field"><label>Apellido (opcional)</label><input type="text" id="self-lastname" placeholder="Garcia"/></div>
+      <div class="field"><label>Apodo (opcional)</label><input type="text" id="self-nickname" placeholder="Pedrito (opcional)"/></div>
+      <div class="field"><label>Fecha de nacimiento (opcional)</label><input type="date" id="self-dob"/></div>
+      <div class="field"><label>WhatsApp / Teléfono</label><input type="tel" id="self-phone" placeholder="+52 333 000 0000"/></div>
+      <div class="field"><label>Correo electrónico</label><input type="email" id="self-email" placeholder="your@email.com"/></div>
+      <div class="field"><label>Contraseña</label><input type="password" id="self-password" placeholder="Mínimo 6 caracteres"/></div>
+      <div id="self-error" class="error"></div>
+      <button class="btn btn-primary" onclick="doSelfRegister()">Enviar</button>
+      <div style="text-align:center;margin-top:12px;"><button class="btn-link" onclick="showScreen('register-type')">← Atrás</button></div>
+    </div>
+  </div>
+
+  <!-- REGISTER STEP 2: PARENT INFO -->
+  <div id="screen-register-parent" style="display:none;">
+    <div class="card">
+      <div class="step-indicator"><div class="step done"></div><div class="step active"></div><div class="step"></div></div>
+      <h2>Tus datos</h2>
+      <p class="subtitle">Cuéntanos sobre ti</p>
+      <div class="field">
+        <label>Eres</label>
+        <select id="reg-relationship">
+          <option value="mother">Mamá</option>
+          <option value="father">Papá</option>
+          <option value="guardian">Tutor legal</option>
+        </select>
+      </div>
+      <div class="field"><label>Tu nombre</label><input type="text" id="reg-parent-name" placeholder="Maria Garcia"/></div>
+      <div class="field"><label>WhatsApp / Teléfono</label><input type="tel" id="reg-phone" placeholder="+52 333 000 0000"/></div>
+      <div class="field"><label>Correo electrónico</label><input type="email" id="reg-email" placeholder="your@email.com"/></div>
+      <div class="field"><label>Contraseña</label><input type="password" id="reg-password" placeholder="Mínimo 6 caracteres"/></div>
+      <div id="parent-error" class="error"></div>
+      <button class="btn btn-primary" onclick="goToStudentInfo()">Continuar</button>
+      <div style="text-align:center;margin-top:12px;"><button class="btn-link" onclick="showScreen('register-code')">← Atrás</button></div>
+    </div>
+  </div>
+
+  <!-- REGISTER STEP 3: STUDENT INFO -->
+  <div id="screen-register-student" style="display:none;">
+    <div class="card">
+      <div class="step-indicator"><div class="step done"></div><div class="step done"></div><div class="step active"></div></div>
+      <h2>Datos del alumno</h2>
+      <p class="subtitle">Cuéntanos sobre tu hijo/a</p>
+      <div class="field">
+        <label>Solo el nombre</label>
+        <input type="text" id="reg-student-name" placeholder="Pedro" oninput="validateFirstNameOnly(this)"/>
+        <div id="name-warning" style="display:none;color:#e65100;font-size:0.8rem;margin-top:4px;">⚠️ Solo el nombre aquí — el apellido va abajo.</div>
+      </div>
+      <div class="field"><label>Apellido (opcional)</label><input type="text" id="reg-student-lastname" placeholder="Garcia"/></div>
+      <div class="field"><label>Fecha de nacimiento (opcional)</label><input type="date" id="reg-student-dob"/></div>
+      <div class="field"><label>Apodo (opcional)</label><input type="text" id="reg-student-nickname" placeholder="Pedrito (opcional)"/></div>
+      <div id="student-error" class="error"></div>
+      <button class="btn btn-primary" onclick="doRegister()">Enviar</button>
+      <div style="text-align:center;margin-top:12px;"><button class="btn-link" onclick="showScreen('register-parent')">← Atrás</button></div>
+    </div>
+  </div>
+
+  <!-- REGISTER: CLASS TYPE (1v1 vs Group) -->
+  <div id="screen-register-class-type" style="display:none;">
+    <div class="card">
+      <h2>Tipo de clase</h2>
+      <p class="subtitle">¿Qué tipo de clase?</p>
+      <button onclick="chooseClassType('1v1')" style="width:100%;padding:16px;margin-bottom:12px;background:#f0f7ff;border:2px solid #1a73e8;border-radius:12px;cursor:pointer;font-family:Nunito;font-size:1rem;font-weight:900;color:#1a73e8;text-align:left;">
+        🎓 Privada 1 a 1
+        <div style="font-size:0.8rem;font-weight:400;color:#555;margin-top:4px;">Horario flexible</div>
+      </button>
+      <button onclick="chooseClassType('group')" style="width:100%;padding:16px;background:#f0fff4;border:2px solid #2e7d32;border-radius:12px;cursor:pointer;font-family:Nunito;font-size:1rem;font-weight:900;color:#2e7d32;text-align:left;">
+        👥 Clase grupal
+        <div style="font-size:0.8rem;font-weight:400;color:#555;margin-top:4px;">Lun–Jue, grupos pequeños</div>
+      </button>
+      <div id="classtype-error" class="error"></div>
+      <div style="text-align:center;margin-top:12px;"><button class="btn-link" onclick="backFromClassType()">← Atrás</button></div>
+    </div>
+  </div>
+
+  <!-- TRIAL CLASS READY SCREEN -->
+  <div id="screen-email-sent" style="display:none;">
+    <div class="card" style="text-align:center;">
+      <div style="font-size:3rem;margin-bottom:12px;">📧</div>
+      <h2>¡Revisa tu correo!</h2>
+      <p class="subtitle">Te enviamos un enlace de verificación a tu correo.</p>
+      <p style="color:#888;font-size:0.85rem;margin-top:8px;">Cuando lo verifiques, inicia sesión para ver el estado de tu inscripción. La escuela revisará tu solicitud pronto.</p>
+      <button class="btn btn-primary" style="margin-top:20px;" onclick="showScreen('login')">Ir a iniciar sesión</button>
+    </div>
+  </div>
+
+  <!-- SELECT GROUP OPENING -->
+  <div id="screen-select-group-opening" style="display:none;">
+    <div class="card">
+      <h2>Elige tu clase</h2>
+      <p class="subtitle">Selecciona un horario disponible</p>
+      <div id="group-openings-list" style="margin:20px 0;"></div>
+      <div id="group-opening-error" class="error"></div>
+      <div style="text-align:center;margin-top:16px;">
+        <button class="btn btn-secondary" onclick="goBackToStudents()">← Atrás</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="screen-dashboard" style="display:none;">
+    <div class="card" style="padding:16px 20px;text-align:center;">
+      <div style="font-size:1.1rem;font-weight:900;color:#1a1a2e;" id="dash-welcome">¡Bienvenido!</div>
+      <div style="font-size:0.8rem;color:#888;">Panel de padres Aula Futura</div>
+    </div>
+
+    <!-- Payment reminder banner — filled in by renderPaymentBanner() -->
+    <div id="payment-banner" style="display:none;"></div>
+
+    <div class="card">
+      <div class="dashboard-nav">
+        <button class="nav-tab active" onclick="showTab('students')" id="tab-students">👨‍🎓 Alumnos</button>
+        <button class="nav-tab" onclick="showTab('classes')" id="tab-classes">📚 Clases Disponibles</button>
+        <button class="nav-tab" onclick="showTab('attendance')" id="tab-attendance">📋 Asistencia</button>
+        <button class="nav-tab" onclick="showTab('reports')" id="tab-reports">📝 Reportes</button>
+        <button class="nav-tab" onclick="showTab('calendar')" id="tab-calendar" style="display:none;">🗓 Calendario</button>
+        <button class="nav-tab" onclick="showTab('payment')" id="tab-payment" style="display:none;">💳 Pagar</button>
+        <button class="nav-tab" onclick="showTab('help')" id="tab-help">❓ Ayuda</button>
+      </div>
+
+      <!-- Help tab — videos chosen by admin for parents -->
+      <div id="panel-help" style="display:none;">
+        <div id="help-videos-box" style="padding:8px 0;"></div>
+      </div>
+
+      <!-- Students tab -->
+      <div id="panel-students">
+        <div id="students-list"></div>
+        <button class="btn btn-secondary" onclick="showAddStudent()" style="margin-top:12px;">+ Agregar alumno</button>
+      </div>
+
+      <!-- Classes Available tab -->
+      <div id="panel-classes" style="display:none;">
+        <div id="classes-available-list"></div>
+      </div>
+
+      <!-- Attendance tab -->
+      <div id="panel-attendance" style="display:none;">
+        <div id="attendance-list"></div>
+      </div>
+
+      <!-- Progress reports tab -->
+      <div id="panel-reports" style="display:none;">
+        <div id="reports-list"></div>
+      </div>
+
+
+      <!-- Calendar tab -->
+      <div id="panel-calendar" style="display:none;">
+        <div id="calendar-student-select" style="margin-bottom:16px;"></div>
+        <div id="parent-calendar-wrap"></div>
+      </div>
+
+      <!-- Payment tab -->
+      <div id="panel-payment" style="display:none;">
+        <div id="payment-content"></div>
+      </div>
+
+
+    </div>
+
+    <!-- Add student modal -->
+    <div id="add-student-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:420px;">
+        <h2 style="margin-bottom:16px;">Agregar alumno</h2>
+        <div class="field">
+          <label>Solo el nombre</label>
+          <input type="text" id="add-name" placeholder="Pedro" oninput="validateFirstNameOnly(this)"/>
+          <div id="add-name-warning" style="display:none;color:#e65100;font-size:0.8rem;margin-top:4px;">⚠️ Solo el nombre aquí — el apellido va abajo.</div>
+        </div>
+        <div class="field"><label>Apellido (opcional)</label><input type="text" id="add-lastname" placeholder="Garcia"/></div>
+        <div class="field"><label>Fecha de nacimiento (opcional)</label><input type="date" id="add-dob"/></div>
+        <div class="field"><label>Apodo (opcional)</label><input type="text" id="add-nickname" placeholder="Pedrito (opcional)"/></div>
+        <div class="field">
+          <label>Tipo de clase</label>
+          <select id="add-classtype" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-family:Nunito;font-size:0.9rem;">
+            <option value="1v1">🎓 Privada 1 a 1</option>
+            <option value="group">👥 Clase grupal</option>
+          </select>
+        </div>
+        <div id="add-error" class="error"></div>
+        <div id="add-success" class="success notranslate" translate="no"></div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button class="btn btn-primary" onclick="submitAddStudent()" style="flex:1;">Enviar</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('add-student-modal').style.display='none'" style="flex:1;">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reschedule request modal -->
+    <div id="reschedule-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:440px;max-height:85vh;overflow-y:auto;">
+        <div id="reschedule-pick-view">
+          <h2 style="margin-bottom:8px;">📅 Pedir nuevo horario</h2>
+          <p style="color:#888;font-size:0.9rem;margin-bottom:16px;">Elige una hora preferida y un día disponible. Un administrador debe aprobar el cambio antes de que sea definitivo.</p>
+          <div class="resched-time-row">
+            <div>
+              <label>Hora preferida:</label>
+              <select id="resched-time-select">
+                <option value="">-- Selecciona --</option>
+              </select>
+            </div>
+            <button class="resched-search-btn" onclick="searchRescheduleSlots()">🔍 Buscar</button>
+          </div>
+          <div id="resched-calendar-wrap" style="display:none;">
+            <div class="resched-cal-nav">
+              <button class="resched-cal-nav-btn" onclick="changeRescheduleMonth(-1)">‹</button>
+              <div id="resched-cal-title" style="font-weight:900;"></div>
+              <button class="resched-cal-nav-btn" onclick="changeRescheduleMonth(1)">›</button>
+            </div>
+            <div class="resched-cal-grid" id="resched-cal-grid"></div>
+            <div class="resched-legend">
+              <div class="resched-legend-item"><div class="resched-legend-dot" style="background:#c8e6c9;"></div>Disponible</div>
+              <div class="resched-legend-item"><div class="resched-legend-dot" style="background:#ffcdd2;"></div>No disponible</div>
+            </div>
+          </div>
+          <div id="reschedule-error" class="error"></div>
+        </div>
+        <div id="reschedule-pending-view" style="display:none;text-align:center;padding:20px 0;">
+          <div style="font-size:2.5rem;margin-bottom:12px;">⏳</div>
+          <h2 style="margin-bottom:8px;">¡Solicitud enviada!</h2>
+          <p style="color:#666;font-size:0.92rem;">Un administrador revisará y confirmará tu nuevo horario pronto.</p>
+        </div>
+        <button class="btn btn-secondary" onclick="document.getElementById('reschedule-modal').style.display='none'" style="width:100%;margin-top:16px;">Cerrar</button>
+      </div>
+    </div>
+
+    <!-- Reschedule confirm sub-popup -->
+    <div id="resched-confirm-popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:360px;text-align:center;">
+        <p id="resched-confirm-text" style="font-size:1rem;margin-bottom:20px;"></p>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-secondary" style="flex:1;" onclick="document.getElementById('resched-confirm-popup').style.display='none'">Cancelar</button>
+          <button class="btn btn-primary" style="flex:1;" onclick="confirmRescheduleRequest()">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORGOT PASSWORD -->
+  <div id="screen-forgot" style="display:none;">
+    <div class="card">
+      <h2>Olvidé mi contraseña</h2>
+      <p class="subtitle">Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.</p>
+      <div class="field"><label>Correo electrónico</label><input type="email" id="forgot-email" placeholder="your@email.com"/></div>
+      <div id="forgot-success" class="success"></div>
+      <div id="forgot-error" class="error"></div>
+      <button class="btn btn-primary" onclick="doForgotPassword()">Enviar enlace</button>
+      <div style="text-align:center;margin-top:12px;"><button class="btn-link" onclick="showScreen('login')">← Volver a iniciar sesión</button></div>
+    </div>
+  </div>
+
+  <!-- RESET PASSWORD -->
+  <div id="screen-force-password" style="display:none;">
+    <div class="card">
+      <div style="text-align:center;font-size:2rem;margin-bottom:12px;">🔐</div>
+      <h2>Crea tu contraseña</h2>
+      <p class="subtitle">Por seguridad, cambia la contraseña temporal antes de continuar.</p>
+      <div class="field"><label>Nueva contraseña</label><input type="password" id="force-password" placeholder="Mínimo 6 caracteres"/></div>
+      <div class="field"><label>Confirmar contraseña</label><input type="password" id="force-confirm" placeholder="Repite la contraseña"/></div>
+      <div id="force-error" class="error"></div>
+      <button class="btn btn-primary" onclick="doForcePassword()">Guardar</button>
+    </div>
+  </div>
+
+  <div id="screen-reset" style="display:none;">
+    <div class="card">
+      <div style="text-align:center;font-size:2rem;margin-bottom:12px;">🔑</div>
+      <h2>Nueva contraseña</h2>
+      <p class="subtitle">Ingresa tu nueva contraseña abajo.</p>
+      <div class="field"><label>Nueva contraseña</label><input type="password" id="reset-password" placeholder="Mínimo 6 caracteres"/></div>
+      <div class="field"><label>Confirmar</label><input type="password" id="reset-confirm" placeholder="Repite la contraseña"/></div>
+      <div id="reset-error" class="error"></div>
+      <div id="reset-success" class="success"></div>
+      <button class="btn btn-primary" onclick="doResetPassword()">Guardar nueva contraseña</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SERVER_URL = window.AF_CONFIG.SERVER_URL;
+
+function escHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function fmt12(t) {
+  if (!t) return '—';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  return `${(h % 12) || 12}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+let _validCode = '';
+let _familyDiscount = 0;   // private per-family discount %, set by admin
+let _regPath = 'parent';
+let _selectedClassType = null;
+let _parentToken = localStorage.getItem('parentToken');
+
+// Check for email verification token in URL
+const urlParams = new URLSearchParams(window.location.search);
+const verifyToken = urlParams.get('verify');
+const resetToken = urlParams.get('reset');
+const linkCode = urlParams.get('code');   // magic registration link from admin
+if (verifyToken) {
+  fetch(`${SERVER_URL}/parent/verify?token=${verifyToken}`)
+    .then(r => r.json())
+    .then(d => { if (d.success) showScreen('verify'); else showScreen('login'); });
+} else if (resetToken) {
+  showScreen('reset');
+} else if (linkCode) {
+  // Parent tapped a registration link — fill the code in and validate it for them.
+  showScreen('register-code');
+  const input = document.getElementById('reg-code');
+  if (input) input.value = linkCode.toUpperCase();
+  validateCode();
+} else if (_parentToken) {
+  loadDashboard();
+} else {
+  showScreen('login');
+}
+
+function showScreen(name) {
+  document.body.classList.toggle('dashboard-mode', name === 'dashboard');
+  ['login','register-code','register-type','register-self','register-parent','register-student','register-class-type','email-sent','dashboard','verify','forgot','reset','trial-ready','select-group-opening','force-password'].forEach(s => {
+    const el = document.getElementById(`screen-${s}`);
+    if (el) el.style.display = 'none';
+  });
+  const target = document.getElementById(`screen-${name}`);
+  if (target) target.style.display = 'block';
+}
+
+async function setRegType(type) {
+  localStorage.setItem('regType', type);
+  if (type === 'self') showScreen('register-self');
+  else showScreen('register-parent');
+}
+
+async function doSelfRegister() {
+  _regPath = 'self';
+  const errEl = document.getElementById('self-error');
+  errEl.style.display = 'none';
+  const name = document.getElementById('self-name').value.trim();
+  const lastname = document.getElementById('self-lastname').value.trim();
+  const nickname = document.getElementById('self-nickname').value.trim();
+  const dob = document.getElementById('self-dob').value;
+  const phone = document.getElementById('self-phone').value.trim();
+  const email = document.getElementById('self-email').value.trim();
+  const password = document.getElementById('self-password').value;
+  if (!name) { errEl.textContent = 'Ingresa tu primer nombre'; errEl.style.display = 'block'; return; }
+  if (name.includes(' ')) { errEl.textContent = 'Solo el primer nombre'; errEl.style.display = 'block'; return; }
+  if (!phone || !email || !password) { errEl.textContent = 'Llena todos los campos'; errEl.style.display = 'block'; return; }
+  if (password.length < 6) { errEl.textContent = 'Mínimo 6 caracteres'; errEl.style.display = 'block'; return; }
+
+  // Ask for class type before submitting
+  if (!_selectedClassType) { showScreen('register-class-type'); return; }
+
+  const capName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+  const displayName = nickname || capName;
+  const body = {
+    code: _validCode, registrationType: 'self',
+    parentName: displayName, phone, email, password,
+    relationship: 'self',
+    studentName: capName, studentNickname: nickname, studentDOB: dob, studentFullName: lastname ? `${capName} ${lastname}` : '',
+    classType: _selectedClassType
+  };
+  const res = await fetch(`${SERVER_URL}/parent/register`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (data.success) {
+    showScreen('email-sent');
+  } else { errEl.textContent = data.error || 'No se pudo completar el registro'; errEl.style.display = 'block'; }
+}
+
+async function validateCode() {
+  const code = document.getElementById('reg-code').value.trim().toUpperCase();
+  const errEl = document.getElementById('code-error');
+  errEl.style.display = 'none';
+  if (!code) { errEl.textContent = 'Ingresa un código'; errEl.style.display = 'block'; return; }
+  const res = await fetch(`${SERVER_URL}/parent/validate-code`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ code }) });
+  const data = await res.json();
+  if (data.valid) { _validCode = code; _selectedClassType = null; showScreen('register-type'); }
+  else { errEl.textContent = 'Código inválido o ya usado'; errEl.style.display = 'block'; }
+}
+
+function goToStudentInfo() {
+  const errEl = document.getElementById('parent-error');
+  const name = document.getElementById('reg-parent-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pwd = document.getElementById('reg-password').value;
+  const phone = document.getElementById('reg-phone').value.trim();
+  if (!name || !email || !pwd || !phone) { errEl.textContent = 'Por favor llena todos los campos'; errEl.style.display = 'block'; return; }
+  if (pwd.length < 6) { errEl.textContent = 'Mínimo 6 caracteres'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+  showScreen('register-student');
+}
+
+function validateFirstNameOnly(input) {
+  const val = input.value;
+  const warningId = input.id === 'reg-student-name' ? 'name-warning' : 'add-name-warning';
+  const warning = document.getElementById(warningId);
+  if (val.includes(' ')) {
+    input.value = val.split(' ')[0]; // auto-trim to first word
+    if (warning) { warning.style.display = 'block'; setTimeout(() => warning.style.display = 'none', 3000); }
+  }
+  // Auto capitalize first letter
+  if (val.length === 1) input.value = val.toUpperCase();
+}
+
+async function doRegister() {
+  _regPath = 'parent';
+  const errEl = document.getElementById('student-error');
+  errEl.style.display = 'none';
+  const studentName = document.getElementById('reg-student-name').value.trim();
+  const studentLastname = document.getElementById('reg-student-lastname').value.trim();
+  const dob = document.getElementById('reg-student-dob').value;
+  const nickname = document.getElementById('reg-student-nickname').value.trim();
+  if (!studentName) { errEl.textContent = 'Por favor ingresa el nombre'; errEl.style.display = 'block'; return; }
+  if (studentName.includes(' ')) { errEl.textContent = 'Solo primer nombre, sin espacios'; errEl.style.display = 'block'; return; }
+
+  // Ask for class type before submitting
+  if (!_selectedClassType) { showScreen('register-class-type'); return; }
+
+  // Capitalize first letter
+  const capName = studentName.charAt(0).toUpperCase() + studentName.slice(1).toLowerCase();
+  const displayName = nickname || capName; // prioritize nickname
+
+  const body = {
+    code: _validCode,
+    relationship: document.getElementById('reg-relationship').value,
+    parentName: document.getElementById('reg-parent-name').value.trim(),
+    phone: document.getElementById('reg-phone').value.trim(),
+    email: document.getElementById('reg-email').value.trim(),
+    password: document.getElementById('reg-password').value,
+    studentName: capName,
+    studentNickname: nickname,
+    studentDOB: dob,
+    studentFullName: studentLastname ? `${capName} ${studentLastname}` : '',
+    classType: _selectedClassType
+  };
+
+  const res = await fetch(`${SERVER_URL}/parent/register`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (data.success) {
+    // Show trial class screen
+    showScreen('email-sent');
+  } else {
+    errEl.textContent = data.error || 'Error en registro';
+    errEl.style.display = 'block';
+  }
+}
+
+function chooseClassType(type) {
+  _selectedClassType = type;
+  if (_regPath === 'self') doSelfRegister();
+  else doRegister();
+}
+
+function backFromClassType() {
+  _selectedClassType = null;
+  showScreen(_regPath === 'self' ? 'register-self' : 'register-student');
+}
+
+async function doForcePassword() {
+  const pwd = document.getElementById('force-password').value;
+  const conf = document.getElementById('force-confirm').value;
+  const errEl = document.getElementById('force-error');
+  errEl.style.display = 'none';
+  if (pwd.length < 6) { errEl.textContent = 'Mínimo 6 caracteres'; errEl.style.display = 'block'; return; }
+  if (pwd !== conf) { errEl.textContent = 'Las contraseñas no coinciden'; errEl.style.display = 'block'; return; }
+  const res = await fetch(`${SERVER_URL}/parent/change-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_parentToken}` },
+    body: JSON.stringify({ newPassword: pwd })
+  });
+  const data = await res.json();
+  if (data.success) { loadDashboard(); }
+  else { errEl.textContent = data.error || 'No se pudo guardar'; errEl.style.display = 'block'; }
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pwd = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  const res = await fetch(`${SERVER_URL}/parent/login`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email, password: pwd }) });
+  const data = await res.json();
+  if (data.success) {
+    localStorage.setItem('parentToken', data.token);
+    localStorage.setItem('parentName', data.parentName);
+    _parentToken = data.token;
+    // Admin-issued temporary password — force the parent to set their own first.
+    if (data.mustChangePassword) { showScreen('force-password'); return; }
+    loadDashboard();
+  } else {
+    errEl.textContent = data.error || 'Error al iniciar sesión';
+    errEl.style.display = 'block';
+  }
+}
+
+// Shows a payment reminder at the top of the dashboard: overdue, due today, or due soon.
+function renderPaymentBanner(students) {
+  const el = document.getElementById('payment-banner');
+  if (!el) return;
+
+  const MS_DAY = 24 * 60 * 60 * 1000;
+  const startOfToday = new Date(); startOfToday.setHours(0,0,0,0);
+
+  const relevant = students
+    .filter(s => s.nextPaymentDue && !s.transferPending)
+    .map(s => {
+      const due = new Date(s.nextPaymentDue);
+      const dueMidnight = new Date(due); dueMidnight.setHours(0,0,0,0);
+      return { name: s.name, due, daysLeft: Math.round((dueMidnight - startOfToday) / MS_DAY) };
+    })
+    .filter(s => s.daysLeft <= 3)          // overdue, today, or within 3 days
+    .sort((a,b) => a.daysLeft - b.daysLeft);
+
+  if (!relevant.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+
+  const fmt = d => d.toLocaleDateString('es-MX', { day: '2-digit', month: 'long' });
+  const worst = relevant[0];
+
+  let bg, border, icon, heading;
+  if (worst.daysLeft < 0) {
+    bg = '#ffebee'; border = '#c62828'; icon = '⚠️';
+    heading = 'Pago vencido';
+  } else if (worst.daysLeft === 0) {
+    bg = '#fff3e0'; border = '#e65100'; icon = '💳';
+    heading = 'Tu pago vence hoy';
+  } else {
+    bg = '#fffde7'; border = '#f9a825'; icon = '📅';
+    heading = 'Tu pago vence pronto';
+  }
+
+  const lines = relevant.map(s => {
+    let when;
+    if (s.daysLeft < 0)       when = `venció el ${fmt(s.due)}`;
+    else if (s.daysLeft === 0) when = 'vence hoy';
+    else if (s.daysLeft === 1) when = 'vence mañana';
+    else                       when = `vence en ${s.daysLeft} días (${fmt(s.due)})`;
+    return `<div style="font-size:0.88rem;margin-top:3px;"><strong>${s.name}</strong> — ${when}</div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="card" style="background:${bg};border-left:5px solid ${border};padding:16px 20px;">
+      <div style="font-weight:900;color:${border};font-size:0.95rem;">${icon} ${heading}</div>
+      ${lines}
+      <button class="btn btn-primary" style="margin-top:12px;padding:9px 18px;font-size:0.9rem;"
+        onclick="showTab('payment')">Ir a pagar</button>
+    </div>`;
+  el.style.display = 'block';
+}
+
+async function loadDashboard() {
+  showScreen('dashboard');
+  document.getElementById('dash-welcome').textContent = `Welcome, ${localStorage.getItem('parentName') || 'Parent'}! 👋`;
+  document.getElementById('header-signout-btn').style.display = 'block';
+
+  const res = await fetch(`${SERVER_URL}/parent/dashboard`, { headers: { Authorization: `Bearer ${_parentToken}` } });
+  if (!res.ok) { doLogout(); return; }
+  const data = await res.json();
+  _dashboardStudents = data.students || [];
+  renderSuspensionBanner(_dashboardStudents);
+  _familyDiscount = data.familyDiscount || 0;
+  await loadBillingData();
+  renderPaymentBanner(data.students || []);
+
+  // Render students
+  const list = document.getElementById('students-list');
+  if (!data.students?.length) {
+    list.innerHTML = '<div style="text-align:center;color:#888;padding:20px;">Sin estudiantes aún</div>';
+  } else {
+    // Show schedule tab whenever parent has students
+    const calTab = document.getElementById('tab-calendar');
+    if (calTab) calTab.style.display = data.students.length > 0 ? 'block' : 'none';
+
+    list.innerHTML = data.students.map(s => `
+      <div class="student-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <div>
+            <span class="student-name">${s.displayName || s.name}</span>
+            <span class="paid-badge ${s.paid ? 'paid-yes' : 'paid-no'}">${s.paid ? '✅ Pagado' : '❌ Sin pagar'}</span>
+          </div>
+          <span style="font-size:0.75rem;padding:3px 10px;border-radius:20px;font-weight:700;background:${s.status==='approved'?'#e8f5e9':s.status==='pending'?'#fff3e0':'#ffebee'};color:${s.status==='approved'?'#2e7d32':s.status==='pending'?'#e65100':'#c62828'};">
+            ${s.status==='approved'?'✅ Active':s.status==='pending'?'⏳ Pending Review':'❌ Denied'}
+          </span>
+        </div>
+        ${s.trialPassword && !s.trialBooked && !s.trialCompleted ? `
+          ${s.classType === 'group' && s.trialLevel ? `
+            <div style="background:linear-gradient(135deg,#00c853,#00701a);border-radius:12px;padding:16px;margin-top:12px;text-align:center;">
+              <div style="color:white;font-size:0.9rem;font-weight:700;margin-bottom:12px;">📚 Clase de prueba grupal</div>
+              <div style="color:rgba(255,255,255,0.85);font-size:0.82rem;margin-bottom:12px;">La escuela te contactará para agendar tu clase de prueba.</div>
+              <button onclick="requestTrialContact('${s.name}')" style="display:block;width:100%;padding:10px;background:rgba(255,255,255,0.2);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.9rem;">📞 Contactar a la escuela</button>
+            </div>
+          ` : (s.classType === '1v1' || (s.classType === 'group' && !s.trialLevel)) ? `
+            <div style="background:linear-gradient(135deg,#1a73e8,#0d47a1);border-radius:12px;padding:16px;margin-top:12px;text-align:center;">
+              <div style="color:rgba(255,255,255,0.8);font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">🎓 Trial Class</div>
+              <div style="display:flex;gap:12px;justify-content:center;margin-bottom:4px;">
+                <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:10px 20px;">
+                  <div style="color:rgba(255,255,255,0.7);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Room</div>
+                  <div class="notranslate" translate="no" style="color:white;font-size:2rem;font-weight:900;line-height:1;">${s.classType === 'group' ? '100' : '101'}</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:10px 20px;">
+                  <div style="color:rgba(255,255,255,0.7);font-size:0.7rem;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Password</div>
+                  <div class="notranslate" translate="no" style="color:white;font-size:2rem;font-weight:900;line-height:1;letter-spacing:2px;">${s.trialPassword}</div>
+                </div>
+              </div>
+            </div>
+            <a href="login.html" style="display:block;margin-top:8px;padding:12px;background:#2e7d32;color:white;border-radius:10px;text-align:center;font-weight:900;font-size:0.95rem;text-decoration:none;">📝 Exam</a>
+          ` : ''}
+        ` : ''}
+        ${s.trialBooked && !s.trialCompleted ? `
+          <div style="background:#e8f5e9;border-radius:8px;padding:12px;margin-top:10px;font-size:0.85rem;">
+            <div style="color:#2e7d32;font-weight:700;">✅ ¡Clase de prueba programada!</div>
+            <button onclick="openRescheduleRequest('${s.name}')" style="display:block;width:100%;margin-top:10px;padding:8px;background:#ff9800;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:0.85rem;">
+              📅 Reagendar
+            </button>
+            ${s.trialDate ? `<div style="color:#555;margin-top:2px;">📅 ${s.trialDate} ${s.trialLevel ? '· Level: ' + s.trialLevel : ''}</div>` : ''}
+            ${s.studentRoom && s.studentPassword ? `
+              <div style="margin-top:10px;background:linear-gradient(135deg,#1a73e8,#0d47a1);border-radius:10px;padding:12px;text-align:center;">
+                <div style="color:rgba(255,255,255,0.8);font-size:0.72rem;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">🎓 Cómo entrar</div>
+                <div style="display:flex;gap:10px;justify-content:center;">
+                  <div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:8px 16px;">
+                    <div style="color:rgba(255,255,255,0.7);font-size:0.65rem;font-weight:700;text-transform:uppercase;">Salón</div>
+                    <div style="color:white;font-size:1.6rem;font-weight:900;line-height:1.2;">${s.studentRoom}</div>
+                  </div>
+                  <div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:8px 16px;">
+                    <div style="color:rgba(255,255,255,0.7);font-size:0.65rem;font-weight:700;text-transform:uppercase;">Contraseña</div>
+                    <div style="color:white;font-size:1.6rem;font-weight:900;line-height:1.2;letter-spacing:2px;">${s.studentPassword}</div>
+                  </div>
+                </div>
+              </div>` : ''}
+          </div>` : ''}
+        ${!s.paid && s.status === 'approved' ? '<div style="font-size:0.8rem;color:#c62828;margin-top:6px;font-weight:700;">⚠️ Por favor contacta a facturación</div>' : ''}
+      </div>
+    `).join('');
+
+    // Render attendance
+    const attList = document.getElementById('attendance-list');
+    const allAtt = data.students.flatMap(s => (s.attendance || []).map(a => ({...a, studentName: s.name})));
+    allAtt.sort((a,b) => b.date.localeCompare(a.date));
+    if (!allAtt.length) {
+      attList.innerHTML = '<div style="text-align:center;color:#888;padding:20px;">Aún no hay registros de asistencia</div>';
+    } else {
+      attList.innerHTML = allAtt.map(a => `
+        <div class="att-row">
+          <div>
+            <div style="font-weight:700;">${a.studentName}</div>
+            <div style="color:#888;font-size:0.8rem;">${a.date} · ${a.scheduledTime || ''} · ${a.classType || ''}</div>
+          </div>
+          <span class="att-status ${a.endType==='completed'?'att-completed':a.endType==='ended_early'?'att-incomplete':'att-invalid'}">
+            ${a.endType==='completed'?'✅ Complete':a.endType==='ended_early'?'⚠️ Incomplete':'❌ Invalid'}
+          </span>
+        </div>
+      `).join('');
+    }
+  }
+}
+
+async function renderAvailableClasses() {
+  const wrap = document.getElementById('classes-available-list');
+  wrap.innerHTML = '<div style="text-align:center;color:#888;padding:20px;">Cargando...</div>';
+  try {
+    const [classesRes, infoRes] = await Promise.all([
+      fetch(`${SERVER_URL}/parent/available-classes`, { headers: { Authorization: `Bearer ${_parentToken}` } }),
+      fetch(`${SERVER_URL}/school-info/public`)
+    ]);
+    const { classes } = await classesRes.json();
+    const info = await infoRes.json().catch(() => ({}));
+    const wa = info.whatsapp;
+    const waMsg = encodeURIComponent('Hola, quisiera más información sobre horarios / clases disponibles.');
+    const waLink = wa ? `https://wa.me/${wa}?text=${waMsg}` : null;
+
+    const rows = (classes || []).map(c => `
+      <div style="display:flex;justify-content:space-between;align-items:center;background:${c.full ? '#f5f5f5' : '#f0f7ff'};border-radius:10px;padding:12px 16px;margin-bottom:8px;">
+        <div>
+          <div style="font-weight:900;color:#1a1a2e;">Grupal ${escHtml(c.level)} · ${c.time ? fmt12(c.time) : '—'}</div>
+          <div style="font-size:0.78rem;color:#888;">Lun–Jue · ${escHtml(c.classType)}</div>
+        </div>
+        <div style="text-align:right;">
+          ${c.full
+            ? '<span style="background:#e0e0e0;color:#666;padding:4px 10px;border-radius:10px;font-size:0.8rem;font-weight:900;">Lleno</span>'
+            : `<span style="background:#1a1a2e;color:white;padding:4px 10px;border-radius:10px;font-size:0.8rem;font-weight:900;">${c.seatsAvailable} lugar${c.seatsAvailable===1?'':'es'} / seat${c.seatsAvailable===1?'':'s'}</span>`}
+          <div style="font-size:0.72rem;color:#aaa;margin-top:2px;">${c.seatsTaken}/6</div>
+        </div>
+      </div>`).join('');
+
+    wrap.innerHTML = `
+      <div style="font-size:0.85rem;color:#555;margin-bottom:14px;line-height:1.5;">
+        Estos son los horarios de clases grupales disponibles ahora mismo. Si un horario nuevo te conviene más,
+        contáctanos — el cambio se hace por WhatsApp, no desde aquí.
+      </div>
+      ${rows || '<div style="text-align:center;color:#aaa;padding:20px;">No hay clases grupales configuradas todavía.</div>'}
+      <div style="margin-top:18px;padding:16px;background:#fff8e1;border-radius:12px;">
+        <div style="font-weight:900;color:#e65100;margin-bottom:4px;">🎓 ¿Buscas clases 1v1?</div>
+        <div style="font-size:0.85rem;color:#666;margin-bottom:10px;">Los horarios 1v1 son personalizados — contáctanos directamente.</div>
+        ${waLink
+          ? `<a href="${waLink}" target="_blank" style="display:inline-block;padding:10px 20px;background:#25d366;color:white;border-radius:10px;text-decoration:none;font-weight:900;font-size:0.9rem;">💬 Contactar por WhatsApp</a>`
+          : ''}
+      </div>`;
+  } catch(e) {
+    wrap.innerHTML = '<div style="text-align:center;color:#c62828;padding:20px;">Error loading classes.</div>';
+  }
+}
+
+// ---- Help videos (admin chooses which ones show for parents) ----
+  // ---- Help video popup (title list → small centered player) ----
+  let HV_LIST = [];
+  function hvOpen(i) {
+    const v = HV_LIST[i]; if (!v) return;
+    let m = document.getElementById('hv-modal');
+    if (!m) {
+      m = document.createElement('div'); m.id = 'hv-modal';
+      m.style.cssText = 'position:fixed;inset:0;background:rgba(10,15,30,0.72);display:none;align-items:center;justify-content:center;padding:20px;z-index:20000;';
+      m.innerHTML = '<div style="background:#fff;border-radius:16px;width:100%;max-width:780px;padding:14px 14px 16px;box-shadow:0 24px 60px rgba(0,0,0,.35);">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;">' +
+        '<div id="hv-modal-title" style="font-weight:800;font-size:1rem;color:#1a1a2e;"></div>' +
+        '<button id="hv-modal-x" aria-label="Close" style="border:none;background:#eef0f4;border-radius:50%;width:32px;height:32px;font-size:0.95rem;cursor:pointer;color:#333;">✕</button></div>' +
+        '<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:10px;overflow:hidden;background:#000;">' +
+        '<iframe id="hv-modal-frame" style="position:absolute;inset:0;width:100%;height:100%;border:0;" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin"></iframe></div></div>';
+      document.body.appendChild(m);
+      m.addEventListener('click', e => { if (e.target === m || e.target.id === 'hv-modal-x' || e.target.closest('#hv-modal-x')) hvClose(); });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') hvClose(); });
+    }
+    document.getElementById('hv-modal-title').textContent = v.title;
+    document.getElementById('hv-modal-frame').src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(v.youtubeId) + '?autoplay=1&rel=0';
+    m.style.display = 'flex';
+  }
+  function hvClose() {
+    const m = document.getElementById('hv-modal'); if (!m || m.style.display === 'none') return;
+    m.style.display = 'none'; document.getElementById('hv-modal-frame').src = 'about:blank';
+  }
+
+  async function loadHelpVideos() {
+    const box = document.getElementById('help-videos-box'); if (!box || !_parentToken) return;
+    try {
+      const r = await fetch(`${SERVER_URL}/help-videos`, { headers: { Authorization: `Bearer ${_parentToken}` } });
+      const d = await r.json(); HV_LIST = d.videos || [];
+      if (!HV_LIST.length) { box.innerHTML = '<div style="color:#888;text-align:center;padding:24px;">Aún no hay videos de ayuda.</div>'; return; }
+      box.innerHTML = HV_LIST.map((v, i) => `<button onclick="hvOpen(${i})" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;border:1px solid #e2e6ee;border-radius:12px;background:#fff;cursor:pointer;font-family:inherit;font-size:0.95rem;font-weight:700;color:#1a1a2e;">` +
+        `<span style="flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:#e8f0fe;color:#1a73e8;display:flex;align-items:center;justify-content:center;font-size:0.75rem;">▶</span>` +
+        `<span style="flex:1;min-width:0;">${esc(v.title)}</span></button>`).join('');
+    } catch (e) { box.innerHTML = '<div style="color:#e53935;">No se pudieron cargar los videos.</div>'; }
+  }
+
+function showTab(tab) {
+  ['students','classes','attendance','reports','calendar','payment','help'].forEach(p => {
+    const el = document.getElementById(`panel-${p}`);
+    if (el) el.style.display = p === tab ? 'block' : 'none';
+  });
+  if (tab === 'help') loadHelpVideos();
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const activeTab = document.getElementById(`tab-${tab}`);
+  if (activeTab) activeTab.classList.add('active');
+  if (tab === 'classes')  renderAvailableClasses();
+  if (tab === 'reports')  renderReportsTab();
+  if (tab === 'calendar') renderParentCalendar();
+  if (tab === 'payment')  renderPaymentTab();
+}
+
+// A disabled child can't enter class; the parent still gets in here so they can pay.
+function renderSuspensionBanner(students) {
+  const blocked = (students || []).filter(s => s.suspended);
+  const el = document.getElementById('payment-banner');
+  if (!el || !blocked.length) return;
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="background:#ffebee;border:2px solid #b71c1c;border-radius:12px;padding:14px 18px;margin-bottom:12px;">
+      <div style="font-weight:900;color:#b71c1c;margin-bottom:4px;">🚫 Acceso suspendido</div>
+      <div style="font-size:0.86rem;color:#5d4037;">
+        ${blocked.map(s => `<strong>${s.name}</strong>`).join(', ')} no puede entrar a clase por falta de pago.
+        Por favor realiza tu pago o contáctanos para reactivar la cuenta.
+      </div>
+    </div>` + el.innerHTML;
+}
+
+// ── PROGRESS REPORTS (read-only for parents) ──
+const REPORT_LABELS = {
+  attendance: 'Asistencia y Puntualidad', participation: 'Participación y Esfuerzo',
+  speaking: 'Conversación y Pronunciación', listening: 'Comprensión Auditiva',
+  reading: 'Lectura', grammar: 'Gramática', vocabulary: 'Vocabulario'
+};
+
+function reportDate(d) {
+  if (!d) return '—';
+  const [y, m, dd] = String(d).split('-');
+  return `${dd}/${m}/${y}`;
+}
+
+function scoreBar(v) {
+  const color = v >= 4 ? '#2e7d32' : v >= 3 ? '#f9a825' : '#c62828';
+  return `<span style="display:inline-block;">${[1,2,3,4,5].map(i =>
+    `<span style="display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:2px;background:${i <= v ? color : '#e0e0e0'};"></span>`).join('')}
+    <strong style="margin-left:6px;color:${color};">${v}/5</strong></span>`;
+}
+
+async function renderReportsTab() {
+  const box = document.getElementById('reports-list');
+  box.innerHTML = '<div style="color:#888;font-size:0.88rem;">Cargando…</div>';
+  try {
+    const res = await fetch(`${SERVER_URL}/parent/reviews`, { headers: { Authorization: `Bearer ${_parentToken}` } });
+    const reports = await res.json();
+    if (!Array.isArray(reports) || !reports.length) {
+      box.innerHTML = '<div style="color:#888;font-size:0.88rem;text-align:center;padding:20px 0;">Aún no hay reportes de progreso.<br><span style="font-size:0.8rem;">Los maestros los publican al final de cada mes.</span></div>';
+      return;
+    }
+    box.innerHTML = reports.map(r => `
+      <div style="border:2px solid #e6ecf5;border-radius:12px;padding:14px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;align-items:baseline;">
+          <div style="font-weight:900;color:#1a1a2e;">${escHtml(r.studentName)}</div>
+          <div style="font-size:0.78rem;color:#888;">Maestro: ${escHtml(r.teacherName || '—')}</div>
+        </div>
+        <div style="font-size:0.82rem;color:#1a73e8;font-weight:700;margin:4px 0 10px;">
+          Periodo evaluado: ${reportDate(r.periodFrom)} – ${reportDate(r.periodTo)}
+        </div>
+        ${Object.keys(REPORT_LABELS).filter(k => r.scores && r.scores[k] !== undefined).map(k => `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f2f2f2;">
+            <span style="font-size:0.83rem;">${REPORT_LABELS[k]}</span>
+            ${scoreBar(r.scores[k])}
+          </div>`).join('')}
+        <div style="margin-top:12px;background:#f7f9fc;border-radius:8px;padding:12px;font-size:0.86rem;line-height:1.55;white-space:pre-wrap;">${escHtml(r.comment || '')}</div>
+      </div>`).join('');
+  } catch(e) {
+    box.innerHTML = '<div style="color:#c62828;font-size:0.88rem;">No se pudieron cargar los reportes.</div>';
+  }
+}
+
+function showAddStudent() {
+  document.getElementById('add-student-modal').style.display = 'flex';
+}
+
+async function submitAddStudent() {
+  const name = document.getElementById('add-name').value.trim();
+  const lastname = document.getElementById('add-lastname')?.value.trim() || '';
+  const dob = document.getElementById('add-dob').value;
+  const nickname = document.getElementById('add-nickname')?.value.trim() || '';
+  const errEl = document.getElementById('add-error');
+  const sucEl = document.getElementById('add-success');
+  errEl.style.display = 'none'; if(sucEl) sucEl.style.display = 'none';
+  if (!name) { errEl.textContent = 'Por favor ingresa el nombre'; errEl.style.display = 'block'; return; }
+  if (name.includes(' ')) { errEl.textContent = 'Solo primer nombre, sin espacios'; errEl.style.display = 'block'; return; }
+  const capName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+  const classType = document.getElementById('add-classtype')?.value || '1v1';
+  const res = await fetch(`${SERVER_URL}/parent/add-student`, {
+    method: 'POST', headers: {'Content-Type':'application/json', Authorization: `Bearer ${_parentToken}`},
+    body: JSON.stringify({ studentName: capName, studentDOB: dob, studentNickname: nickname, studentFullName: lastname ? `${capName} ${lastname}` : '', classType })
+  });
+  const data = await res.json();
+  if (data.success) {
+    if(sucEl) { sucEl.textContent = `✅ ${capName} added! Trial: Room ${classType === 'group' ? '100' : '101'}, Password: ${data.trialPassword || 'try1'}`; sucEl.style.display = 'block'; }
+    setTimeout(() => { document.getElementById('add-student-modal').style.display = 'none'; loadDashboard(); }, 3000);
+  } else { errEl.textContent = data.error || 'Failed'; errEl.style.display = 'block'; }
+}
+
+async function doForgotPassword() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const errEl = document.getElementById('forgot-error');
+  const sucEl = document.getElementById('forgot-success');
+  errEl.style.display = 'none'; sucEl.style.display = 'none';
+  if (!email) { errEl.textContent = 'Por favor ingresa tu correo'; errEl.style.display = 'block'; return; }
+  const res = await fetch(`${SERVER_URL}/parent/forgot-password`, {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email })
+  });
+  sucEl.textContent = '✅ Si ese correo está registrado, recibirás un enlace pronto.';
+  sucEl.style.display = 'block';
+}
+
+async function doResetPassword() {
+  const pwd = document.getElementById('reset-password').value;
+  const confirm = document.getElementById('reset-confirm').value;
+  const errEl = document.getElementById('reset-error');
+  const sucEl = document.getElementById('reset-success');
+  errEl.style.display = 'none'; sucEl.style.display = 'none';
+  if (!pwd || pwd.length < 6) { errEl.textContent = 'Mínimo 6 caracteres'; errEl.style.display = 'block'; return; }
+  if (pwd !== confirm) { errEl.textContent = 'Las contraseñas no coinciden'; errEl.style.display = 'block'; return; }
+  const res = await fetch(`${SERVER_URL}/parent/reset-password`, {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ token: resetToken, password: pwd })
+  });
+  const data = await res.json();
+  if (data.success) {
+    sucEl.textContent = '✅ Contraseña actualizada, ya puedes iniciar sesión.';
+    sucEl.style.display = 'block';
+    setTimeout(() => showScreen('login'), 2500);
+  } else {
+    errEl.textContent = data.error || 'No se pudo restablecer la contraseña'; errEl.style.display = 'block';
+  }
+}
+
+function doLogout() {
+  localStorage.removeItem('parentToken');
+  localStorage.removeItem('parentName');
+  _parentToken = null;
+  showScreen('login');
+}
+
+// ── BILLING & CALENDAR ──
+let _billingData = null;
+let _dashboardStudents = [];
+let _calStudentName = null;
+let _calDate = new Date();
+
+async function loadBillingData() {
+  try {
+    const res = await fetch(`${SERVER_URL}/parent/billing`, { headers: { Authorization: `Bearer ${_parentToken}` } });
+    _billingData = await res.json();
+    // Show calendar and payment tabs if any student has trial completed
+    const anyReady = (_billingData.students || []).some(s => s.trialCompleted || s.enrolledType);
+    if (anyReady) {
+      document.getElementById('tab-calendar').style.display = 'block';
+      document.getElementById('tab-payment').style.display = 'block';
+    }
+  } catch(e) {}
+}
+
+// ── CALENDAR ──
+async function renderParentCalendar() {
+  if (!_billingData) await loadBillingData();
+  const students = _billingData?.students || [];
+  const wrap = document.getElementById('parent-calendar-wrap');
+  const selWrap = document.getElementById('calendar-student-select');
+  if (!students.length) { wrap.innerHTML = '<div style="text-align:center;color:#888;padding:20px;">No students found</div>'; return; }
+
+  // Student selector (if multiple)
+  if (students.length > 1) {
+    selWrap.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      ${students.map(s => `<button onclick="selectCalStudent('${s.name}')" id="calbtn-${s.name}"
+        style="padding:6px 14px;border-radius:20px;border:2px solid ${_calStudentName===s.name?'#1a73e8':'#ddd'};
+        background:${_calStudentName===s.name?'#1a73e8':'white'};color:${_calStudentName===s.name?'white':'#444'};
+        font-family:Nunito;font-weight:700;cursor:pointer;font-size:0.85rem;">${s.name}</button>`).join('')}
+    </div>`;
+  } else {
+    selWrap.innerHTML = '';
+    _calStudentName = students[0].name;
+  }
+
+  if (!_calStudentName) _calStudentName = students[0].name;
+  await renderCalendarMonth();
+}
+
+function selectCalStudent(name) {
+  _calStudentName = name;
+  renderParentCalendar();
+}
+
+async function renderCalendarMonth() {
+  const wrap = document.getElementById('parent-calendar-wrap');
+  if (!wrap) return;
+  const student = (_billingData?.students || []).find(s => s.name === _calStudentName);
+
+  // Fetch schedule for this student this month
+  let classDates = [];
+  let classInfo = {}; // date -> {time, room, password, classType}
+  try {
+    const res = await fetch(`${SERVER_URL}/parent/schedule/${encodeURIComponent(_calStudentName)}`, {
+      headers: { Authorization: `Bearer ${_parentToken}` }
+    });
+    const data = await res.json();
+    classDates = data.map(a => a.date);
+    data.forEach(a => {
+      if (!classInfo[a.date]) classInfo[a.date] = [];
+      classInfo[a.date].push(a);
+    });
+  } catch(e) {}
+  try {
+    const ar = await fetch(`${SERVER_URL}/parent/absences`, { headers: { Authorization: `Bearer ${_parentToken}` } });
+    window._absenceData = await ar.json();
+  } catch(e) { window._absenceData = { noticeHours: 4, absences: [] }; }
+
+  const year = _calDate.getFullYear();
+  const month = _calDate.getMonth();
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
+
+  // Payment badge
+  const payBadge = student?.lastPaidAt ? `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <div style="background:#e8f5e9;border-radius:10px;padding:8px 14px;font-size:0.82rem;">
+        <span style="color:#888;font-weight:700;">Last paid:</span>
+        <span style="color:#2e7d32;font-weight:900;margin-left:4px;">${fmtDateP(student.lastPaidAt)}</span>
+      </div>
+      ${student.nextPaymentDue ? `<div style="background:${new Date(student.nextPaymentDue)<new Date()?'#ffebee':'#fff3e0'};border-radius:10px;padding:8px 14px;font-size:0.82rem;">
+        <span style="color:#888;font-weight:700;">Next due:</span>
+        <span style="color:${new Date(student.nextPaymentDue)<new Date()?'#c62828':'#e65100'};font-weight:900;margin-left:4px;">${fmtDateP(student.nextPaymentDue)}</span>
+      </div>` : ''}
+    </div>` : '';
+
+  // Build calendar grid
+  const dayLabels = ['Su','Mo','Tu','We','Th','Fr','Sa'].map(d =>
+    `<div class="p-cal-day-label">${d}</div>`).join('');
+
+  const cells = [];
+  for (let i = 0; i < firstDay; i++) cells.push('<div class="p-cal-cell empty"></div>');
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = dateStr === todayStr;
+    const hasClass = classDates.includes(dateStr);
+    const isPast = dateStr < todayStr;
+    const cls = ['p-cal-cell', hasClass?'has-class':'', isToday&&!hasClass?'today':'', isPast&&!hasClass?'past':''].filter(Boolean).join(' ');
+    const starClick = hasClass ? `onclick="showClassPopup('${dateStr}')" style="cursor:pointer;"` : '';
+    cells.push(`<div class="${cls}" ${starClick}>${d}${hasClass ? `<span class="star">${absentOn(dateStr) ? '🚫' : '⭐'}</span>` : ''}</div>`);
+  }
+
+  window._calClassInfo = classInfo; // store for popup use
+
+  wrap.innerHTML = `
+    <div id="makeup-card"></div>
+    <div style="background:white;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <button onclick="calPrev()" style="background:#f0f4f8;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:900;font-size:1rem;">‹</button>
+        <div style="font-weight:900;font-size:1rem;color:#1a1a2e;">${monthNames[month]} ${year}</div>
+        <button onclick="calNext()" style="background:#f0f4f8;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:900;font-size:1rem;">›</button>
+      </div>
+      ${payBadge}
+      <div class="p-cal-grid">${dayLabels}${cells.join('')}</div>
+      <div style="display:flex;gap:12px;margin-top:12px;font-size:0.78rem;color:#888;">
+        <span>⭐ = Día de clase</span>
+        <span>🚫 = Absence reported</span>
+        <span style="background:#1a1a2e;color:white;padding:1px 6px;border-radius:4px;">■</span><span>= Scheduled</span>
+      </div>
+    </div>`;
+  loadMakeups();
+}
+
+// ── Make-up (reposición) of a cancelled 1v1 class ──
+let _mk = { list: [], cur: null, data: null, day: null };
+const _mkDate = d => new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+const _mkShort = d => { const x = new Date(d + 'T12:00:00'); return x.toLocaleDateString('es-MX', { weekday: 'short' }).replace('.', '') + ' ' + x.getDate(); };
+const _mkT12 = t => { const [h, m] = t.split(':').map(Number); return `${(h % 12) || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`; };
+async function loadMakeups() {
+  const box = document.getElementById('makeup-card'); if (!box) return;
+  try {
+    const r = await fetch(`${SERVER_URL}/parent/makeups`, { headers: { Authorization: `Bearer ${_parentToken}` } });
+    _mk.list = ((await r.json()).makeups || []).filter(m => m.studentName === _calStudentName);
+  } catch (e) { _mk.list = []; }
+  if (!_mk.list.length) { box.innerHTML = ''; return; }
+  box.innerHTML = `<div style="background:#e8f0fe;border:2px solid #1a73e8;border-radius:14px;padding:14px;margin-bottom:12px;">
+    <div style="font-weight:900;color:#1a73e8;margin-bottom:6px;">🔁 Clases por reponer</div>
+    ${_mk.list.map(m => `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-top:1px solid #c5d8f8;">
+      <div style="font-size:0.88rem;"><b>${_mkDate(m.date)}</b> · ${_mkT12(m.time)} · ${m.minutes} min<br><span style="color:#666;font-size:0.76rem;">${m.pending ? 'Cancelación pendiente de confirmar' : 'Cancelada'} · puedes reponerla hasta el ${_mkDate(m.lastDay)}</span></div>
+      <button onclick="openMakeup('${m.id}')" style="background:#1a73e8;color:white;border:none;border-radius:10px;padding:9px 14px;font-family:Nunito;font-weight:900;cursor:pointer;">📅 Reprogramar</button>
+    </div>`).join('')}
+    <div style="color:#666;font-size:0.76rem;margin-top:6px;">Si no la repones, queda como crédito en tu próximo pago.</div></div>`;
+}
+async function openMakeup(id) {
+  _mk.cur = _mk.list.find(m => m.id === id); _mk.day = null; if (!_mk.cur) return;
+  let ov = document.getElementById('makeup-modal');
+  if (!ov) { ov = document.createElement('div'); ov.id = 'makeup-modal'; ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:flex-end;justify-content:center;'; document.body.appendChild(ov); }
+  ov.style.display = 'flex'; ov.innerHTML = '<div style="background:white;border-radius:18px 18px 0 0;padding:20px;width:100%;max-width:520px;text-align:center;">Cargando horarios...</div>';
+  try {
+    const r = await fetch(`${SERVER_URL}/parent/makeup/slots?absenceId=${encodeURIComponent(id)}`, { headers: { Authorization: `Bearer ${_parentToken}` } });
+    _mk.data = await r.json();
+  } catch (e) { _mk.data = { success: false, error: 'Error de conexión' }; }
+  renderMakeup();
+}
+function closeMakeup() { const ov = document.getElementById('makeup-modal'); if (ov) ov.style.display = 'none'; }
+function renderMakeup() {
+  const ov = document.getElementById('makeup-modal'), d = _mk.data, m = _mk.cur; if (!ov) return;
+  let body;
+  if (!d || !d.success) body = `<div style="color:#c62828;font-weight:700;">${d && d.error || 'No se pudo cargar.'}</div>`;
+  else if (!d.days.length) body = '<div style="color:#e65100;font-weight:700;">No hay horarios libres con el mismo maestro. Contacta a la escuela para reponerla.</div>';
+  else {
+    const btn = (on, nw) => `padding:8px 10px;border:2px solid ${on ? '#1a73e8' : nw ? '#ffcc80' : '#ddd'};border-radius:10px;background:${on ? '#e8f0fe' : 'white'};color:${on ? '#1a73e8' : '#1a1a2e'};font-family:Nunito;font-weight:700;font-size:0.8rem;cursor:pointer;`;
+    const day = d.days.find(x => x.date === _mk.day);
+    body = `<div style="font-size:0.8rem;color:#888;margin-bottom:8px;">Mismo maestro · ${d.len} min. Los días en naranja cuentan para la próxima semana.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px;">${d.days.map(x => `<button onclick="mkPickDay('${x.date}')" style="${btn(_mk.day === x.date, x.nextWeek)}">${_mkShort(x.date)}${x.nextWeek ? ' ⚠️' : ''}</button>`).join('')}</div>
+      ${day ? `<div style="font-weight:900;margin-bottom:6px;">${_mkDate(day.date)}</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">${day.times.map(t => `<button onclick="mkBook('${day.date}','${t}')" style="${btn(false, day.nextWeek)}">${_mkT12(t)}</button>`).join('')}</div>` : '<div style="color:#aaa;font-size:0.85rem;">Elige un día</div>'}`;
+  }
+  ov.innerHTML = `<div style="background:white;border-radius:18px 18px 0 0;padding:20px;width:100%;max-width:520px;max-height:85vh;overflow:auto;">
+    <div style="font-weight:900;font-size:1.05rem;color:#1a1a2e;margin-bottom:4px;">🔁 Reprogramar clase</div>
+    <div style="font-size:0.82rem;color:#666;margin-bottom:12px;">Clase cancelada: ${_mkDate(m.date)} · ${_mkT12(m.time)}</div>${body}
+    <button onclick="closeMakeup()" style="width:100%;margin-top:14px;padding:11px;border:none;border-radius:10px;background:#eceff1;color:#455a64;font-family:Nunito;font-weight:900;cursor:pointer;">Cerrar</button></div>`;
+}
+function mkPickDay(date) { _mk.day = date; renderMakeup(); }
+async function mkBook(date, time) {
+  const day = _mk.data.days.find(x => x.date === date);
+  const msg = day.nextWeek
+    ? `⚠️ Esta clase contará para la próxima semana.\n\n¿Estás de acuerdo en reponerla el ${_mkDate(date)} a las ${_mkT12(time)}?`
+    : `¿Reponer la clase el ${_mkDate(date)} a las ${_mkT12(time)}?`;
+  if (!confirm(msg)) return;
+  try {
+    const r = await fetch(`${SERVER_URL}/parent/makeup`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_parentToken}` },
+      body: JSON.stringify({ absenceId: _mk.cur.id, date, time, acceptNextWeek: !!day.nextWeek }) });
+    const d = await r.json();
+    if (!d.success) { alert(d.error || 'Error'); if (!d.needsConfirm) openMakeup(_mk.cur.id); return; }
+    closeMakeup();
+    alert('✅ ¡Listo! La clase quedó reprogramada. Avisamos al maestro y a la escuela.');
+  } catch (e) { alert('Error, intenta de nuevo'); return; }
+  await renderCalendarMonth();
+}
+
+function calPrev() { _calDate = new Date(_calDate.getFullYear(), _calDate.getMonth()-1, 1); renderCalendarMonth(); }
+function calNext() { _calDate = new Date(_calDate.getFullYear(), _calDate.getMonth()+1, 1); renderCalendarMonth(); }
+
+function fmtDateP(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('es-MX', { timeZone: 'America/Mexico_City', day:'2-digit', month:'short', year:'numeric' });
+}
+
+// ── PAYMENT TAB ──
+async function renderPaymentTab() {
+  if (!_billingData) await loadBillingData();
+  const wrap = document.getElementById('payment-content');
+  if (!wrap) return;
+  const students = _billingData?.students || [];
+
+  if (!students.length) { wrap.innerHTML = '<div style="text-align:center;color:#888;padding:20px;">No students found</div>'; return; }
+
+  // Pricing constants
+  const CLABE = _billingData?.bankInfo?.clabe || '';
+  const BANK_NAME = _billingData?.bankInfo?.bankName || 'STP';
+  const CARD = (_billingData?.bankInfo?.cardNumber) ? _billingData.bankInfo : null;
+  const fmtCard = n => String(n).replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+
+  // Calculate weekly price based on type/length/days
+  function calcWeeklyBase(type, minutesPerSession, daysPerWeek) {
+    if (type === 'group') return _priceCfg().groupWeekly;
+    const totalMinsPerWeek = minutesPerSession * daysPerWeek;
+    const totalHrsPerWeek = totalMinsPerWeek / 60;
+    const ratePerHr = totalMinsPerWeek > 60 ? _priceCfg().rateOver60 : _priceCfg().rateUpTo60;
+    return Math.round(ratePerHr * totalHrsPerWeek);
+  }
+
+  function calcAdvertised(base) { return Math.round(base * 1.05); }
+
+  function cycleMultiplier(cycle) {
+    return { weekly: 1, monthly: 4 }[cycle] || 1;
+  }
+
+  function cycleLabel(cycle) {
+    return { weekly: 'Semanal', monthly: 'Mensual' }[cycle] || cycle;
+  }
+
+  wrap.innerHTML = students.map(s => {
+    // Already submitted a transfer awaiting verification
+    if (s.transferPending) return `
+      <div style="background:white;border-radius:14px;padding:24px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:10px;">⏳</div>
+        <div style="font-size:1.1rem;font-weight:900;color:#00695c;margin-bottom:6px;">${s.name}</div>
+        <div style="font-size:0.95rem;font-weight:700;color:#1a1a2e;">Tu pago está por verificarse</div>
+        <div style="background:#e0f2f1;border-radius:10px;padding:12px;font-size:0.85rem;color:#00695c;margin-top:12px;">
+          Esto puede tardar de 24 a 48 horas hábiles.
+        </div>
+      </div>`;
+    if (!s.trialCompleted) return `
+      <div style="background:#fff3e0;border-radius:12px;padding:16px;margin-bottom:12px;text-align:center;">
+        <div style="font-size:1.1rem;font-weight:900;color:#1a1a2e;margin-bottom:4px;">${s.name}</div>
+        <div style="font-size:0.85rem;color:#888;">⏳ Clase de prueba pendiente — las opciones de pago aparecerán cuando se complete la prueba.</div>
+      </div>`;
+
+    // Not due yet — hide the payment form to prevent double payments, show status instead.
+    // Must actually be marked paid, not just have some due date sitting in the
+    // future — otherwise a student correctly reverted to unpaid could still
+    // show "all paid up" forever if nextPaymentDue wasn't also cleared.
+    const isDue = !s.paid || !s.nextPaymentDue || new Date(s.nextPaymentDue) <= new Date();
+    if (!isDue) return `
+      <div style="background:white;border-radius:14px;padding:24px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:10px;">✅</div>
+        <div style="font-size:1.1rem;font-weight:900;color:#1a1a2e;margin-bottom:6px;">${s.name}</div>
+        <div style="font-size:0.95rem;font-weight:700;color:#2e7d32;">¡Estás al corriente!</div>
+        <div style="background:#fff3e0;border-radius:10px;padding:12px;font-size:0.9rem;color:#e65100;margin-top:12px;font-weight:900;">
+          Próximo pago: ${fmtDateP(s.nextPaymentDue)}
+        </div>
+      </div>`;
+
+    return `
+      <div style="background:white;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);" id="pay-card-${s.name.replace(/\s/g,'_')}">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span style="font-size:1.1rem;font-weight:900;color:#1a1a2e;">👤 ${s.name}</span>
+          ${s.studentId ? `<span style="background:#1a73e8;color:white;padding:2px 8px;border-radius:8px;font-size:0.78rem;font-weight:900;font-family:monospace;letter-spacing:1px;">${s.studentId}</span>` : ''}
+        </div>
+        ${s.nextPaymentDue ? `<div style="text-align:center;margin-bottom:14px;"><span style="background:#ffebee;color:#c62828;padding:4px 12px;border-radius:8px;font-size:0.8rem;font-weight:900;">⏰ Payment due: ${fmtDateP(s.nextPaymentDue)}</span></div>` : ''}
+
+        ${(() => { const sp = specialFor(s.name); if (!sp) return ''; const DN = {monday:'Lunes',tuesday:'Martes',wednesday:'Miércoles',thursday:'Jueves',friday:'Viernes',saturday:'Sábado',sunday:'Domingo'}; const tm = sp.slots.reduce((t,x)=>t+x.minutes,0);
+          return `<div style="background:#fff8e1;border-radius:12px;padding:14px;margin-bottom:14px;"><div style="font-size:0.95rem;font-weight:900;color:#8d6e00;text-align:center;margin-bottom:8px;">⭐ Plan personalizado</div>${sp.slots.map(x => `<div style="display:flex;justify-content:space-between;font-size:0.9rem;padding:3px 0;"><b>${DN[x.day]||x.day}</b><span>${x.time} · ${x.minutes} min</span></div>`).join('')}<div style="border-top:1px solid #f0d98a;margin-top:8px;padding-top:8px;font-size:0.9rem;display:flex;justify-content:space-between;"><span>${tm} min por semana</span><b>$${sp.weekly.toLocaleString('es-MX')} MXN / semana</b></div></div>`; })()}
+        <div style="display:${specialFor(s.name) ? 'none' : 'block'};">
+        <!-- Class Type -->
+        <div style="font-size:0.95rem;font-weight:900;color:#1a73e8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;text-align:center;">Tipo de clase</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+          <button onclick="selectPayOption('${s.name}','type','group')" id="opt-${s.name.replace(/\s/g,'_')}-type-group"
+            class="pay-opt-btn" style="padding:10px;border:2px solid #ddd;border-radius:10px;background:white;font-family:Nunito;font-weight:700;font-size:0.85rem;cursor:pointer;">
+            👥 Grupal<br><span style="font-size:0.72rem;color:#888;">Lun–Jue 40 min</span>
+          </button>
+          <button onclick="selectPayOption('${s.name}','type','1v1')" id="opt-${s.name.replace(/\s/g,'_')}-type-1v1"
+            class="pay-opt-btn" style="padding:10px;border:2px solid #ddd;border-radius:10px;background:white;font-family:Nunito;font-weight:700;font-size:0.85rem;cursor:pointer;">
+            🎓 1v1 Privada<br><span style="font-size:0.72rem;color:#888;">Horario a elegir</span>
+          </button>
+        </div>
+
+        <!-- 1v1 options (hidden by default) -->
+        <div id="1v1-opts-${s.name.replace(/\s/g,'_')}" style="display:none;">
+          <div style="font-size:0.95rem;font-weight:900;color:#1a73e8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;text-align:center;">Duración por sesión</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;">
+            ${[30,40,50,60].map(m => `
+              <button onclick="selectPayOption('${s.name}','mins',${m})" id="opt-${s.name.replace(/\s/g,'_')}-mins-${m}"
+                class="pay-opt-btn" style="padding:8px 4px;border:2px solid #ddd;border-radius:10px;background:white;font-family:Nunito;font-weight:700;font-size:0.85rem;cursor:pointer;">
+                ${m} min
+              </button>`).join('')}
+          </div>
+          <div style="font-size:0.95rem;font-weight:900;color:#1a73e8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;text-align:center;">Días por semana</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;">
+            ${[1,2,3,4].map(d => `
+              <button onclick="selectPayOption('${s.name}','days',${d})" id="opt-${s.name.replace(/\s/g,'_')}-days-${d}"
+                class="pay-opt-btn" style="padding:8px 4px;border:2px solid #ddd;border-radius:10px;background:white;font-family:Nunito;font-weight:700;font-size:0.85rem;cursor:pointer;">
+                ${d}x/sem
+              </button>`).join('')}
+          </div>
+        </div>
+
+        <div id="sched-toggle-wrap-${s.name.replace(/\s/g,'_')}">
+        <!-- Schedule mode toggle -->
+        <div style="font-size:0.95rem;font-weight:900;color:#1a73e8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;text-align:center;">📅 ¿Cómo prefieres agendar?</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+          <button type="button" onclick="setScheduleMode('${s.name}','choose')" id="mode-${s.name.replace(/\s/g,'_')}-choose"
+            class="pay-opt-btn" style="padding:10px 6px;border:2px solid #ddd;border-radius:10px;background:white;font-family:Nunito;font-weight:700;font-size:0.82rem;cursor:pointer;">
+            🗓️ Elegir mi horario
+          </button>
+          <button type="button" onclick="setScheduleMode('${s.name}','contact')" id="mode-${s.name.replace(/\s/g,'_')}-contact"
+            class="pay-opt-btn" style="padding:10px 6px;border:2px solid #ddd;border-radius:10px;background:white;font-family:Nunito;font-weight:700;font-size:0.82rem;cursor:pointer;">
+            📞 Contáctenme
+          </button>
+        </div>
+
+        </div>
+        <div id="wb-${s.name.replace(/\s/g,'_')}" style="display:none;"></div>
+        <!-- CHOOSE MODE: time picker + real availability calendar -->
+        <div id="choose-mode-${s.name.replace(/\s/g,'_')}" style="display:none;">
+          <div style="font-size:0.82rem;color:#888;text-align:center;margin-bottom:8px;">Si todos tus días son a la misma hora. Para horarios distintos por día, usa "Contáctenme".</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;">
+            <input type="time" id="sched-time-${s.name.replace(/\s/g,'_')}" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:0.9rem;">
+            <button onclick="searchScheduleAvailability('${s.name}')" style="padding:8px 14px;background:#1a73e8;color:white;border:none;border-radius:8px;font-family:Nunito;font-weight:700;font-size:0.85rem;cursor:pointer;">Buscar</button>
+          </div>
+          <div id="sched-cal-${s.name.replace(/\s/g,'_')}"></div>
+          <div id="sched-hint-${s.name.replace(/\s/g,'_')}" style="font-size:0.78rem;color:#888;text-align:center;margin-top:6px;"></div>
+        </div>
+
+        </div>
+        <div id="cycle-wrap-${s.name.replace(/\s/g,'_')}">
+        <!-- Billing cycle -->
+        <div style="font-size:0.95rem;font-weight:900;color:#1a73e8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;text-align:center;">Frecuencia de pago</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+          ${['weekly','monthly'].map(c => `
+            <button onclick="selectPayOption('${s.name}','cycle','${c}')" id="opt-${s.name.replace(/\s/g,'_')}-cycle-${c}"
+              class="pay-opt-btn" style="padding:10px;border:2px solid #ddd;border-radius:10px;background:white;font-family:Nunito;font-weight:700;font-size:0.85rem;cursor:pointer;">
+              ${cycleLabel(c)}
+            </button>`).join('')}
+        </div>
+
+        </div>
+        <!-- CONTACT MODE: time range + contact method -->
+        <div id="contact-mode-${s.name.replace(/\s/g,'_')}" style="display:none;">
+          <div style="font-size:0.95rem;font-weight:900;color:#1a73e8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;text-align:center;margin-top:14px;">⏰ ¿En qué horario estás disponible?</div>
+          <div style="background:#f0f7ff;border-radius:12px;padding:12px;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px;">
+            <input type="time" id="range-from-${s.name.replace(/\s/g,'_')}" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;">
+            <span style="color:#888;font-weight:700;">—</span>
+            <input type="time" id="range-to-${s.name.replace(/\s/g,'_')}" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;">
+          </div>
+          <div style="font-size:0.78rem;color:#888;text-align:center;margin-top:-10px;margin-bottom:14px;">El admin confirmará un horario exacto dentro de esta ventana.</div>
+
+          <div style="font-size:0.95rem;font-weight:900;color:#1a73e8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;text-align:center;">📞 ¿Cómo prefieres que te contactemos?</div>
+          <div style="background:#f0f7ff;border-radius:12px;padding:12px;margin-bottom:14px;">
+            <label style="display:flex;align-items:center;margin-bottom:10px;cursor:pointer;"><input type="radio" name="contact-method-${s.name.replace(/\s/g,'_')}" value="call" onchange="toggleContactPhoneField('${s.name}')" style="margin-right:8px;">  Llamada</label>
+            <label style="display:flex;align-items:center;margin-bottom:10px;cursor:pointer;"><input type="radio" name="contact-method-${s.name.replace(/\s/g,'_')}" value="whatsapp" onchange="toggleContactPhoneField('${s.name}')" style="margin-right:8px;"> WhatsApp</label>
+            <label style="display:flex;align-items:center;cursor:pointer;"><input type="radio" name="contact-method-${s.name.replace(/\s/g,'_')}" value="email" onchange="toggleContactPhoneField('${s.name}')" style="margin-right:8px;"> Correo</label>
+            <input type="tel" id="contact-phone-${s.name.replace(/\s/g,'_')}" placeholder="Teléfono" style="display:none;width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:0.85rem;margin-top:10px;">
+          </div>
+        </div>
+
+ <!-- Coupon -->
+        <div style="margin-bottom:14px;text-align:center;">
+          ${(() => { const a = s.activeCoupon; return a ? `<div style="background:#e8f5e9;border-radius:10px;padding:10px;font-size:0.85rem;color:#2e7d32;font-weight:700;">🎟 Cupón ${a.code} aplicado: −${a.percent}%${a.cyclesLeft ? ' (te quedan ' + a.cyclesLeft + ' pagos con descuento)' : ''}</div>` : `
+          <div style="font-size:0.78rem;font-weight:900;color:#888;text-transform:uppercase;margin-bottom:6px;">🎟 ¿Tienes un cupón?</div>
+          <div style="display:flex;gap:6px;justify-content:center;"><input id="coupon-input-${s.name.replace(/\s/g,'_')}" placeholder="Código" autocomplete="off" style="width:150px;padding:9px;border:2px solid #ddd;border-radius:8px;font-family:monospace;font-weight:900;text-transform:uppercase;text-align:center;">
+          <button type="button" onclick="applyCoupon('${s.name}')" style="padding:9px 16px;border:none;border-radius:8px;background:#1a73e8;color:white;font-family:Nunito;font-weight:900;cursor:pointer;">Aplicar</button></div>
+          <div id="coupon-msg-${s.name.replace(/\s/g,'_')}" style="font-size:0.82rem;font-weight:700;margin-top:6px;min-height:1em;"></div>`; })()}
+        </div>
+
+        <!-- Price summary -->
+        <div id="price-summary-${s.name.replace(/\s/g,'_')}" style="display:none;margin-bottom:14px;">
+          <div style="background:#f8f9fa;border-radius:12px;padding:14px;text-align:center;">
+            <div style="font-size:0.72rem;font-weight:900;color:#888;text-transform:uppercase;margin-bottom:4px;">Total a pagar</div>
+            <div id="price-transfer-${s.name.replace(/\s/g,'_')}" style="font-size:1.8rem;font-weight:900;color:#00897b;"></div>
+            <div style="font-size:0.72rem;color:#888;margin-top:2px;">con transferencia bancaria</div>
+          </div>
+        </div>
+
+        <!-- Payment buttons -->
+        <div id="pay-btns-${s.name.replace(/\s/g,'_')}" style="display:none;">
+          <button onclick="showTransferInfo('${s.name}')"
+            style="width:100%;padding:13px;background:#00897b;color:white;border:none;border-radius:10px;font-family:Nunito;font-size:1rem;font-weight:900;cursor:pointer;">
+            🏦 Pagar por Transferencia
+          </button>
+        </div>
+
+        <!-- Transfer info (hidden until clicked) -->
+        <div id="transfer-info-${s.name.replace(/\s/g,'_')}" style="display:none;margin-top:10px;background:#e0f2f1;border-radius:12px;padding:14px;">
+          ${CARD ? `<div style="font-weight:900;color:#00695c;margin-bottom:6px;text-align:center;">¿Cómo vas a pagar?</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+            <button type="button" id="pm-clabe-${s.name.replace(/\s/g,'_')}" onclick="setPayMethod('${s.name}','clabe')" style="padding:10px 4px;border:2px solid #00897b;border-radius:10px;background:#00897b;color:white;font-family:Nunito;font-weight:900;font-size:0.82rem;cursor:pointer;">🏦 Transferencia<br><span style="font-weight:700;font-size:0.7rem;">con CLABE</span></button>
+            <button type="button" id="pm-card-${s.name.replace(/\s/g,'_')}" onclick="setPayMethod('${s.name}','card')" style="padding:10px 4px;border:2px solid #00897b;border-radius:10px;background:white;color:#00897b;font-family:Nunito;font-weight:900;font-size:0.82rem;cursor:pointer;">💳 Depósito a tarjeta<br><span style="font-weight:700;font-size:0.7rem;">(ej. OXXO)</span></button>
+          </div>` : ''}
+          <div id="pm-card-info-${s.name.replace(/\s/g,'_')}" style="display:none;font-size:0.85rem;color:#1a1a2e;line-height:1.8;margin-bottom:8px;">
+            <div style="font-weight:900;color:#00695c;margin-bottom:4px;">💳 Datos para depósito a tarjeta</div>
+            <b>Banco:</b> ${CARD ? CARD.cardBank : ''}<br>
+            <b>Número de tarjeta:</b> <span style="font-family:monospace;font-size:1rem;font-weight:900;letter-spacing:1px;">${CARD ? fmtCard(CARD.cardNumber) : ''}</span><br>
+            <b>A nombre de:</b> ${CARD ? CARD.cardHolder : ''}<br>
+            <div style="font-size:0.75rem;color:#e65100;margin-top:6px;font-weight:700;">⚠️ Guarda tu comprobante del depósito. Pon el ID del alumno (${s.studentId ? s.studentId + ' ' + s.name : s.name}) como referencia si te lo permiten.</div>
+          </div>
+          <div id="pm-clabe-info-${s.name.replace(/\s/g,'_')}">
+          <div style="font-weight:900;color:#00695c;margin-bottom:8px;">📋 Datos para transferencia</div>
+          <div style="font-size:0.85rem;color:#1a1a2e;line-height:1.8;">
+            <b>Banco:</b> ${BANK_NAME}<br>
+            <b>CLABE:</b> <span style="font-family:monospace;font-size:1rem;font-weight:900;letter-spacing:1px;">${CLABE}</span><br>
+            <b>Concepto / Referencia:</b>
+          </div>
+          <div style="background:#1a73e8;color:white;border-radius:8px;padding:10px;text-align:center;margin-top:6px;">
+            <div style="font-size:0.65rem;text-transform:uppercase;opacity:0.8;font-weight:700;">⚠️ Usa este ID del alumno como concepto</div>
+            <div style="font-size:1.8rem;font-weight:900;font-family:monospace;letter-spacing:3px;">${s.studentId ? s.studentId + ' ' + s.name : s.name}</div>
+          </div>
+          <div style="font-size:0.75rem;color:#e65100;margin-top:8px;font-weight:700;">⚠️ Importante: pon el ID del alumno (${s.studentId ? s.studentId + ' ' + s.name : s.name}) como concepto de la transferencia para identificar tu pago.</div>
+          </div>
+          <div style="font-size:0.75rem;color:#888;margin-top:6px;">Una vez realizada la transferencia, presiona el botón de abajo. El pago será verificado en 24-48 horas hábiles.</div>
+          <button onclick="confirmTransfer('${s.name}')"
+            style="width:100%;margin-top:12px;padding:12px;background:#00897b;color:white;border:none;border-radius:10px;font-family:Nunito;font-size:0.95rem;font-weight:900;cursor:pointer;">
+            ✅ Ya realicé la transferencia
+          </button>
+        </div>
+
+        <div style="text-align:center;font-size:0.72rem;color:#aaa;margin-top:8px;">🔒 Pago seguro</div>
+      </div>`;
+  }).join('');
+
+  // Students with a special plan: pre-fill the plan so the price shows right away
+  students.forEach(s => {
+    const sp = specialFor(s.name);
+    if (!sp || !document.getElementById('pay-card-' + s.name.replace(/\s/g,'_'))) return;
+    _payState[s.name] = { type: '1v1', mins: sp.slots.reduce((t, x) => t + x.minutes, 0), days: 1 };
+    selectPayOption(s.name, 'cycle', 'weekly');
+  });
+
+  // Combined payment section — only if 2+ payable students
+  const payableStudents = students.filter(s => s.trialCompleted && !s.transferPending && (!s.nextPaymentDue || new Date(s.nextPaymentDue) <= new Date()));
+  if (payableStudents.length >= 2) {
+    wrap.innerHTML += `
+      <div style="background:linear-gradient(135deg,#1a73e8,#0d47a1);border-radius:14px;padding:18px;margin-top:8px;">
+        <div style="color:white;font-size:1rem;font-weight:900;margin-bottom:6px;text-align:center;">👨‍👩‍👧‍👦 Pagar todos juntos</div>
+        <div style="color:rgba(255,255,255,0.85);font-size:0.8rem;text-align:center;margin-bottom:14px;">
+          Configura el plan de cada alumno arriba, luego paga todo en una sola transacción.
+        </div>
+        <div id="combined-summary" style="background:rgba(255,255,255,0.12);border-radius:10px;padding:12px;margin-bottom:14px;display:none;"></div>
+        <button onclick="transferCombined()" style="width:100%;padding:13px;background:rgba(255,255,255,0.2);color:white;border:2px solid white;border-radius:10px;font-family:Nunito;font-size:1rem;font-weight:900;cursor:pointer;">
+          🏦 Transferencia (Todos)
+        </button>
+      </div>`;
+  }
+}
+
+// Build combined line items from all students that have a complete plan selected
+function getCombinedItems() {
+  const items = [];
+  const groupItems = [];
+  
+  Object.keys(_payState).forEach(name => {
+    const st = _payState[name];
+    const complete = st.type && st.cycle && (st.type === 'group' || (st.mins && st.days));
+    if (!complete || belowMinimum(name)) return;
+    const weeklyBase = weeklyBaseFor(name, st);
+    const weeks = cycleMultiplier(st.cycle);
+    
+    items.push({
+      name,
+      transferAmount: weeklyBase * weeks,
+      cycle: st.cycle,
+      isGroup: st.type === 'group'
+    });
+    
+    if (st.type === 'group') groupItems.push(items[items.length - 1]);
+  });
+  
+  // Family discount (set per-family by admin), then any absence credit - the same
+  // calculation the single-child payment and the on-screen price use (finalAmountFor).
+  items.forEach(item => {
+    const f = finalAmountFor(item.name);
+    if (f.pct > 0 || f.couponPct > 0 || f.credit.value > 0) { item.fullAmount = f.full; item.discount = true; }
+    item.transferAmount = f.amount;
+    item.creditMins = f.credit.mins;
+    item.creditValue = f.credit.value;
+  });
+
+  return items;
+}
+
+async function transferCombined() {
+  const items = getCombinedItems();
+  if (items.length < 2) { alert('Por favor configura el plan de al menos 2 alumnos arriba.'); return; }
+  const total = items.reduce((sum, it) => sum + it.transferAmount, 0);
+  const names = items.map(i => i.name);
+  
+  const planIds = {};
+  for (const item of items) {
+    const plan = await wbCreatePlan(item.name);
+    if (plan.error) { alert(item.name + ': ' + plan.error); return; }
+    if (plan.id) planIds[item.name] = plan.id;
+  }
+  // Save time preferences for all students before marking transfer pending
+  for (const item of items) {
+    const timePrefs = getTimePreferencesForStudent(item.name);
+    if (timePrefs) {
+      try {
+        await fetch(SERVER_URL + '/parent/schedule-preferences', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _parentToken },
+          body: JSON.stringify({ studentName: item.name, ...timePrefs })
+        });
+      } catch(e) { console.error('Could not save preferences for', item.name); }
+    }
+    await submitScheduleRequest(item.name);
+  }
+  
+  if (!confirm('Transferir $' + total.toLocaleString('es-MX') + ' MXN por ' + names.join(', ') + '?\n\nUsa los IDs de los alumnos como concepto.')) return;
+  try {
+    // Build enrollment details for each student
+    const studentDetails = items.map(item => ({
+      name: item.name,
+      enrolledType: _payState[item.name].type === '1v1' ? '1v1 Privada' : 'Grupal',
+      enrolledCycle: _payState[item.name].cycle,
+      enrolledDaysPerWeek: _payState[item.name].days || 4,
+      enrolledMinutesPerClass: _payState[item.name].mins || 40,
+      creditMinsApplied: item.creditMins || 0,
+      couponCode: _payState[item.name].coupon ? _payState[item.name].coupon.code : undefined,
+      weekPlanId: planIds[item.name] || undefined
+    }));
+    
+    const res = await fetch(SERVER_URL + '/parent/transfer-pending', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _parentToken },
+      body: JSON.stringify({ studentNames: names, amount: total, description: 'Transferencia combinada', studentDetails, paymentMethod: _payMethod[names[0]] || 'clabe' })
+    });
+    const data = await res.json();
+    if (data.success) { renderPaymentTab(); }
+    else alert(data.error && /cup[oó]n|alumno ya tiene/i.test(data.error) ? data.error : 'Error, intenta de nuevo');
+  } catch(e) { alert('Error, intenta de nuevo'); }
+}
+
+// State for payment options per student
+const _payState = {};
+
+function selectPayOption(studentName, field, value) {
+  const key = studentName.replace(/\s/g,'_');
+  if (!_payState[studentName]) _payState[studentName] = {};
+  _payState[studentName][field] = value;
+
+  // Changing days-per-week invalidates any specific dates already picked on
+  // the schedule calendar - clear them so there's never a stale count
+  // mismatch, and re-run the search if a calendar is currently showing.
+  if (field === 'days') {
+    _payState[studentName].selectedSchedDates = [];
+    if (_payState[studentName].schedTime) searchScheduleAvailability(studentName);
+  }
+
+  // Update button styles
+  const allBtns = document.querySelectorAll(`#pay-card-${key} .pay-opt-btn`);
+  allBtns.forEach(b => {
+    if (b.id === `opt-${key}-${field}-${value}`) {
+      b.style.borderColor = '#1a73e8';
+      b.style.background = '#e8f0fe';
+      b.style.color = '#1a73e8';
+    } else if (b.id.startsWith(`opt-${key}-${field}-`)) {
+      b.style.borderColor = '#ddd';
+      b.style.background = 'white';
+      b.style.color = '#1a1a2e';
+    }
+  });
+
+  // Show/hide 1v1 options
+  const opts1v1 = document.getElementById(`1v1-opts-${key}`);
+  if (opts1v1) opts1v1.style.display = (_payState[studentName].type === '1v1' && !isWeekPick(studentName)) ? 'block' : 'none';
+  wbSync(studentName);
+
+  if (isWeekPick(studentName)) _payState[studentName].cycle = 'weekly';
+  // If no billing cycle has been picked yet, default to weekly so the price/button always shows
+  if (field !== 'cycle' && !_payState[studentName].cycle) {
+    _payState[studentName].cycle = 'weekly';
+    const cycleBtn = document.getElementById(`opt-${key}-cycle-weekly`);
+    if (cycleBtn) {
+      cycleBtn.style.borderColor = '#1a73e8';
+      cycleBtn.style.background = '#e8f0fe';
+      cycleBtn.style.color = '#1a73e8';
+    }
+  }
+
+  // Calculate price if we have enough info
+  const st = _payState[studentName];
+  const warnId = 'min-warn-' + key;
+  let warn = document.getElementById(warnId);
+  if (belowMinimum(studentName)) {
+    if (!warn) { warn = document.createElement('div'); warn.id = warnId; warn.style.cssText = 'background:#fff3e0;color:#e65100;border-radius:10px;padding:10px;margin:10px 0;font-size:0.85rem;font-weight:700;text-align:center;'; const ps = document.getElementById('price-summary-' + key); ps.parentNode.insertBefore(warn, ps); }
+    warn.textContent = '⚠️ El mínimo para clases 1v1 es 1 hora por semana en total. Puedes dividirla (por ejemplo 30 min + 30 min en dos días), pero 30 minutos a la semana no es suficiente.';
+    warn.style.display = 'block';
+    document.getElementById('price-summary-' + key).style.display = 'none';
+    document.getElementById('pay-btns-' + key).style.display = 'none';
+    updateCombinedSummary();
+    return;
+  }
+  if (warn) warn.style.display = 'none';
+  const hasEnoughInfo = st.type && st.cycle && (st.type === 'group' || (st.mins && st.days));
+  if (!hasEnoughInfo) return;
+
+  const weeklyBase = weeklyBaseFor(studentName, st);
+  const advertised = calcAdvertised(weeklyBase);
+  const weeks = cycleMultiplier(st.cycle);
+  const totalMP = advertised * weeks;
+  const f = finalAmountFor(studentName);
+  const fullTransfer = f.full, pct = f.pct, totalTransfer = f.amount;
+  const priceNotes = [];
+  if (pct > 0) priceNotes.push(`Descuento familiar aplicado (−${pct}%)`);
+  if (f.couponPct > 0) priceNotes.push(`Cupón ${f.couponCode} (−${f.couponPct}%)`);
+  if (f.credit.value > 0) priceNotes.push(`Crédito por ausencia: −$${f.credit.value.toLocaleString('es-MX')} (${f.credit.mins} min)`);
+  document.getElementById(`price-transfer-${key}`).innerHTML = priceNotes.length
+    ? `<span style="text-decoration:line-through;color:#aaa;font-size:0.7em;">$${fullTransfer.toLocaleString('es-MX')}</span>
+       $${totalTransfer.toLocaleString('es-MX')} MXN
+       <div style="font-size:0.6em;color:#2e7d32;font-weight:700;">${priceNotes.join('<br>')}</div>`
+    : `$${totalTransfer.toLocaleString('es-MX')} MXN`;
+  document.getElementById(`price-summary-${key}`).style.display = 'block';
+  document.getElementById(`pay-btns-${key}`).style.display = 'block';
+  updateCombinedSummary();
+}
+
+function setScheduleMode(studentName, mode) {
+  const key = studentName.replace(/\s/g,'_');
+  if (!_payState[studentName]) _payState[studentName] = {};
+  _payState[studentName].scheduleMode = mode;
+
+  const chooseBtn = document.getElementById(`mode-${key}-choose`);
+  const contactBtn = document.getElementById(`mode-${key}-contact`);
+  [chooseBtn, contactBtn].forEach(b => { if (b) { b.style.borderColor = '#ddd'; b.style.background = 'white'; } });
+  const activeBtn = mode === 'choose' ? chooseBtn : contactBtn;
+  if (activeBtn) { activeBtn.style.borderColor = '#1a73e8'; activeBtn.style.background = '#e8f0fe'; }
+
+  const chooseDiv = document.getElementById(`choose-mode-${key}`);
+  const contactDiv = document.getElementById(`contact-mode-${key}`);
+  if (chooseDiv) chooseDiv.style.display = mode === 'choose' ? 'block' : 'none';
+  if (contactDiv) contactDiv.style.display = mode === 'contact' ? 'block' : 'none';
+}
+
+// Always the upcoming Sunday-Saturday, mirroring the server's nextWeekDates()
+// exactly - never the current week, even if today happens to be a Sunday.
+function nextWeekDatesClient() {
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
+  const today = new Date(todayStr + 'T12:00:00');
+  const todayDow = today.getDay();
+  const daysUntilNextSunday = (7 - todayDow) || 7;
+  const start = new Date(today); start.setDate(start.getDate() + daysUntilNextSunday);
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start); d.setDate(d.getDate() + i);
+    dates.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+  }
+  return dates;
+}
+
+async function searchScheduleAvailability(studentName) {
+  const key = studentName.replace(/\s/g,'_');
+  const time = document.getElementById(`sched-time-${key}`)?.value;
+  const hint = document.getElementById(`sched-hint-${key}`);
+  const calDiv = document.getElementById(`sched-cal-${key}`);
+  if (!time) { if (hint) hint.textContent = 'Elige una hora primero'; return; }
+
+  if (!_payState[studentName]) _payState[studentName] = {};
+  _payState[studentName].schedTime = time;
+  _payState[studentName].selectedSchedDates = [];
+
+  let colorMap = {};
+  try {
+    const res = await fetch(`${SERVER_URL}/trial/availability?time=${encodeURIComponent(time)}`);
+    const data = await res.json();
+    colorMap = data.colorMap || {};
+  } catch(e) {}
+
+  const dates = nextWeekDatesClient();
+  const dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const anyAvailable = dates.some(d => colorMap[d] === 'green');
+
+  calDiv.innerHTML = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:4px;">
+    ${dates.map(d => {
+      const dow = new Date(d+'T12:00:00').getDay();
+      const avail = colorMap[d] === 'green';
+      return `<button type="button" ${avail ? `onclick="toggleScheduleDate('${studentName}','${d}')"` : 'disabled'}
+        id="sd-${key}-${d}"
+        style="padding:8px 2px;border:2px solid ${avail?'#ddd':'#eee'};border-radius:8px;background:${avail?'white':'#f5f5f5'};font-family:Nunito;font-weight:700;font-size:0.72rem;cursor:${avail?'pointer':'not-allowed'};color:${avail?'#1a1a2e':'#ccc'};">
+        ${dayNames[dow]}<br>${d.slice(8,10)}
+      </button>`;
+    }).join('')}
+  </div>`;
+
+  if (!anyAvailable) {
+    hint.innerHTML = `<span style="color:#e65100;">No hay maestros disponibles a esa hora la próxima semana. Usa "Contáctenme" para que te ayudemos.</span>`;
+  } else {
+    const limit = (_payState[studentName] || {}).days || 1;
+    hint.textContent = `0 / ${limit} días elegidos · 0/${limit} days picked`;
+  }
+}
+
+function toggleScheduleDate(studentName, dateStr) {
+  const key = studentName.replace(/\s/g,'_');
+  const st = _payState[studentName];
+  if (!st.selectedSchedDates) st.selectedSchedDates = [];
+  const limit = st.days || 1;
+  const btn = document.getElementById(`sd-${key}-${dateStr}`);
+  const idx = st.selectedSchedDates.indexOf(dateStr);
+
+  if (idx >= 0) {
+    st.selectedSchedDates.splice(idx, 1);
+    if (btn) { btn.style.borderColor = '#ddd'; btn.style.background = 'white'; btn.style.color = '#1a1a2e'; }
+  } else {
+    if (st.selectedSchedDates.length >= limit) {
+      alert(`Ya elegiste ${limit} día${limit===1?'':'s'}. Cambia "días por semana" para elegir más.`);
+      return;
+    }
+    st.selectedSchedDates.push(dateStr);
+    if (btn) { btn.style.borderColor = '#1a73e8'; btn.style.background = '#e8f0fe'; btn.style.color = '#1a73e8'; }
+  }
+
+  const hint = document.getElementById(`sched-hint-${key}`);
+  if (hint) hint.textContent = `${st.selectedSchedDates.length} / ${limit} días elegidos · ${st.selectedSchedDates.length}/${limit} days picked`;
+}
+
+// Submits the actual schedule request (pending admin approval) - separate
+// from /parent/schedule-preferences, which only saves display info for the
+// admin billing table. This is what actually creates something for admin
+// to see and act on. 1v1 only - group students use the existing seat-based
+// Available Classes flow instead.
+async function submitScheduleRequest(studentName) {
+  const st = _payState[studentName] || {};
+  if (st.type !== '1v1') return;
+  const mode = st.scheduleMode;
+  if (!mode) return;
+
+  let body = { studentName, mode };
+  if (mode === 'choose') {
+    if (!st.schedTime || !(st.selectedSchedDates||[]).length) return; // nothing picked, nothing to submit
+    body.time = st.schedTime;
+    body.dates = st.selectedSchedDates;
+  } else {
+    const key = studentName.replace(/\s/g,'_');
+    const method = document.querySelector(`input[name="contact-method-${key}"]:checked`)?.value;
+    if (!method) return;
+    body.contactMethod = method;
+    if (method === 'call' || method === 'whatsapp') body.contactPhone = document.getElementById(`contact-phone-${key}`)?.value || null;
+  }
+
+  try {
+    await fetch(SERVER_URL + '/parent/request-1v1-schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _parentToken },
+      body: JSON.stringify(body)
+    });
+  } catch(e) { console.error('Could not submit schedule request for', studentName); }
+}
+
+function toggleContactPhoneField(studentName) {
+  const key = studentName.replace(/\s/g,'_');
+  const method = document.querySelector(`input[name="contact-method-${key}"]:checked`)?.value;
+  const phoneField = document.getElementById(`contact-phone-${key}`);
+  if (phoneField) phoneField.style.display = (method === 'call' || method === 'whatsapp') ? 'block' : 'none';
+}
+
+function getTimePreferencesForStudent(studentName) {
+  const key = studentName.replace(/\s/g,'_');
+  const mode = (_payState[studentName] || {}).scheduleMode;
+  const prefs = {};
+
+  // Time range and contact method both belong to contact mode - choose
+  // mode's actual picks go through submitScheduleRequest separately.
+  if (mode === 'contact') {
+    const from = document.getElementById(`range-from-${key}`)?.value;
+    const to = document.getElementById(`range-to-${key}`)?.value;
+    if (from && to) { prefs.timePreference = 'range'; prefs.preferredTimeRange = { start: from, end: to }; }
+
+    const method = document.querySelector(`input[name="contact-method-${key}"]:checked`)?.value;
+    if (method) {
+      prefs.contactMethod = method;
+      if (method === 'call' || method === 'whatsapp') {
+        const phone = document.getElementById(`contact-phone-${key}`)?.value;
+        if (phone) prefs.contactPhone = phone;
+      }
+    }
+  } else if (mode === 'choose') {
+    const st = _payState[studentName] || {};
+    if (st.schedTime) prefs.timePreference = 'range';
+    if (st.schedTime) prefs.preferredTimeRange = { start: st.schedTime, end: st.schedTime };
+    if ((st.selectedSchedDates||[]).length) prefs.preferredDays = st.selectedSchedDates;
+  }
+
+  return Object.keys(prefs).length ? prefs : null;
+}
+
+function updateCombinedSummary() {
+  const box = document.getElementById('combined-summary');
+  if (!box) return;
+  const items = getCombinedItems();
+  if (items.length < 2) { box.style.display = 'none'; return; }
+  const totalTransfer = items.reduce((s, it) => s + it.transferAmount, 0);
+  box.style.display = 'block';
+  box.innerHTML = items.map(it =>
+    `<div style="display:flex;justify-content:space-between;color:white;font-size:0.85rem;margin-bottom:4px;">
+      <span>${it.name}</span><span>$${it.transferAmount.toLocaleString('es-MX')} ${it.discount ? '<span style="color:green;font-weight:bold;">-15%</span>' : ''}</span>
+    </div>`
+  ).join('') +
+  `${(Number(_familyDiscount)||0) > 0 ? `<div style="display:flex;justify-content:space-between;color:#a5d6a7;font-size:0.8rem;font-weight:700;margin-top:6px;">
+    <span>Descuento familiar</span><span>−${_familyDiscount}%</span>
+  </div>` : ''}
+  <div style="border-top:1px solid rgba(255,255,255,0.3);margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;color:rgba(255,255,255,0.85);font-size:0.8rem;">
+    <span>Con transferencia bancaria</span><span>$${totalTransfer.toLocaleString('es-MX')} MXN</span>
+  </div>`;
+}
+
+function calcWeeklyBase(type, minutesPerSession, daysPerWeek) {
+  if (type === 'group') return _priceCfg().groupWeekly;
+  const totalMins = minutesPerSession * daysPerWeek;
+  const ratePerHr = totalMins > 60 ? _priceCfg().rateOver60 : _priceCfg().rateUpTo60;
+  return Math.round(ratePerHr * (totalMins / 60));
+}
+
+function calcAdvertised(base) { return Math.round(base * 1.05); }
+
+// ── Absence credit ──
+// When admin resolves a reported absence as "discount", the child gets class-credit minutes.
+// They are turned into pesos at the same per-minute price as the plan being paid (after any
+// family discount) and taken off this payment - never more than the bill itself.
+function creditFor(name, st, amount) {
+  const s = (_billingData?.students || []).find(x => x.name === name);
+  const creditMins = Number(s?.creditMins) || 0;
+  if (creditMins <= 0 || !st || !(amount > 0)) return { mins: 0, value: 0 };
+  const minsInCycle = cycleMultiplier(st.cycle) * (st.mins || 40) * (st.days || 4);
+  const perMin = amount / minsInCycle;
+  if (!(perMin > 0) || !isFinite(perMin)) return { mins: 0, value: 0 };
+  const mins = Math.min(creditMins, minsInCycle);
+  return { mins, value: Math.min(amount, Math.round(mins * perMin)) };
+}
+// Prices come from the server (admin edits them); these are only a fallback
+function _priceCfg() { return Object.assign({ rateUpTo60: 350, rateOver60: 300, groupWeekly: 445 }, (_billingData && _billingData.pricing) || {}); }
+// Coupon: a code the parent just typed, or one this student already holds (applies automatically)
+function couponFor(name) {
+  const st = _payState[name] || {};
+  if (st.coupon) return st.coupon;
+  const a = ((_billingData && _billingData.students) || []).find(x => x.name === name)?.activeCoupon;
+  return a ? { code: a.code, percent: a.percent } : null;
+}
+async function applyCoupon(name) {
+  const key = name.replace(/\s/g,'_');
+  const input = document.getElementById('coupon-input-' + key), msg = document.getElementById('coupon-msg-' + key);
+  const code = (input.value || '').trim();
+  if (!code) { msg.style.color = '#c62828'; msg.textContent = 'Escribe tu código.'; return; }
+  msg.style.color = '#888'; msg.textContent = 'Revisando…';
+  try {
+    const r = await fetch(SERVER_URL + '/parent/coupon/check', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _parentToken }, body: JSON.stringify({ code, studentName: name }) });
+    const d = await r.json();
+    if (!_payState[name]) _payState[name] = {};
+    if (d.valid) {
+      _payState[name].coupon = { code: d.code, percent: d.percent };
+      msg.style.color = '#2e7d32'; msg.textContent = `✅ Cupón ${d.code}: −${d.percent}% (${d.label})`;
+    } else { delete _payState[name].coupon; msg.style.color = '#c62828'; msg.textContent = d.error || 'Cupón no válido.'; }
+  } catch (e) { msg.style.color = '#c62828'; msg.textContent = 'No se pudo revisar el cupón. Intenta de nuevo.'; }
+  const st = _payState[name];
+  if (st.type && st.cycle) selectPayOption(name, 'cycle', st.cycle);
+  if (typeof updateCombinedSummary === 'function') updateCombinedSummary();
+}
+
+// ── Weekly class builder (new 1v1 students pick each class every week) ──
+const _wb = {};          // per student: { classes:[], date, len, useOld }
+let _wbData = null;      // { dates, lengths, slots, pricing } from the server
+function wbStudent(name) { return ((_billingData && _billingData.students) || []).find(x => x.name === name) || {}; }
+function isWeekPick(name) {
+  const st = _payState[name] || {};
+  if (st.type !== '1v1') return false;
+  const stu = wbStudent(name);
+  if (stu.hasRecurring || specialFor(name)) return false;
+  return !(_wb[name] && _wb[name].useOld);
+}
+// 1v1 needs at least 60 minutes per week in total (30 + 30 on two days is fine; 30 alone is not)
+const MIN_WEEK_MINS = 60;
+function belowMinimum(name) {
+  const st = _payState[name]; if (!st || st.type !== '1v1' || specialFor(name)) return false;
+  const mins = isWeekPick(name) ? wbTotal(name) : (st.mins || 0) * (st.days || 0);
+  return mins > 0 && mins < MIN_WEEK_MINS;
+}
+function wbTotal(name) { return ((_wb[name] && _wb[name].classes) || []).reduce((t, c) => t + c.minutes, 0); }
+function wbBase(name) {
+  const t = wbTotal(name); if (!t) return 0;
+  const c = _priceCfg(); return Math.round((t > 60 ? c.rateOver60 : c.rateUpTo60) * t / 60);
+}
+const _DOW = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+function _t12(t) { const [h, m] = t.split(':').map(Number); return ((h % 12) || 12) + ':' + String(m).padStart(2, '0') + ' ' + (h < 12 ? 'AM' : 'PM'); }
+function _dateLabel(d) { const x = new Date(d + 'T12:00:00'); return _DOW[x.getDay()] + ' ' + d.slice(8, 10); }
+function wbSync(name) {
+  const key = name.replace(/\s/g, '_');
+  const wb = isWeekPick(name);
+  const box = document.getElementById('wb-' + key); if (!box) return;
+  const tg = document.getElementById('sched-toggle-wrap-' + key), cy = document.getElementById('cycle-wrap-' + key);
+  if (tg) tg.style.display = wb ? 'none' : '';
+  if (cy) cy.style.display = wb ? 'none' : '';
+  box.style.display = wb ? 'block' : 'none';
+  if (!wb) return;
+  if (!_wb[name]) _wb[name] = { classes: [], date: null, len: null };
+  if (!_wbData) { box.innerHTML = '<div style="text-align:center;color:#888;padding:10px;">⏳ Cargando horarios…</div>'; loadWbData().then(() => wbRender(name)); return; }
+  wbRender(name);
+}
+async function loadWbData() {
+  try { const r = await fetch(SERVER_URL + '/parent/1v1/week', { headers: { Authorization: 'Bearer ' + _parentToken } }); _wbData = await r.json(); }
+  catch (e) { _wbData = { dates: [], lengths: [30, 40, 50, 60, 90, 120], slots: {} }; }
+}
+function wbOverlaps(name, date, time, len) {
+  const [h, m] = time.split(':').map(Number), s0 = h * 60 + m;
+  return _wb[name].classes.some(c => { if (c.date !== date) return false; const [ch, cm] = c.time.split(':').map(Number), cs = ch * 60 + cm; return s0 < cs + c.minutes && cs < s0 + len; });
+}
+function wbRender(name) {
+  const key = name.replace(/\s/g, '_'), box = document.getElementById('wb-' + key); if (!box) return;
+  const st = _wb[name], d = _wbData;
+  const q = JSON.stringify(name).replace(/"/g, '&quot;');
+  const btn = (on, dis) => `padding:8px 4px;border:2px solid ${on ? '#1a73e8' : '#ddd'};border-radius:10px;background:${on ? '#e8f0fe' : dis ? '#f5f5f5' : 'white'};color:${on ? '#1a73e8' : dis ? '#bbb' : '#1a1a2e'};font-family:Nunito;font-weight:700;font-size:0.8rem;cursor:${dis ? 'default' : 'pointer'};`;
+  const anyTime = date => (d.lengths || []).some(l => ((d.slots[date] || {})[l] || []).length);
+  let html = `<div style="font-size:0.95rem;font-weight:900;color:#1a73e8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;text-align:center;">📅 Arma tu semana</div>
+    <div style="font-size:0.8rem;color:#888;text-align:center;margin-bottom:10px;">Elige cada clase de la próxima semana: día, duración y hora. Solo ves horarios con maestro disponible.</div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:10px;">
+      ${(d.dates || []).map(dt => { const ok = anyTime(dt); return `<button type="button" ${ok ? `onclick='wbPick(${q},"date","${dt}")'` : 'disabled'} style="${btn(st.date === dt, !ok)}font-size:0.72rem;">${_dateLabel(dt).replace(' ', '<br>')}</button>`; }).join('')}
+    </div>`;
+  if (st.date) {
+    html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;">
+      ${(d.lengths || []).map(l => { const n = ((d.slots[st.date] || {})[l] || []).length; return `<button type="button" ${n ? `onclick='wbPick(${q},"len",${l})'` : 'disabled'} style="${btn(st.len === l, !n)}">${l} min</button>`; }).join('')}
+    </div>`;
+  }
+  if (st.date && st.len) {
+    const times = ((d.slots[st.date] || {})[st.len] || []).filter(t => !wbOverlaps(name, st.date, t, st.len));
+    html += times.length
+      ? `<div style="font-size:0.8rem;font-weight:900;color:#888;margin-bottom:6px;text-align:center;">Toca la hora para agregar la clase</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;">${times.map(t => `<button type="button" onclick='wbAdd(${q},"${t}")' style="${btn(false, false)}">${_t12(t)}</button>`).join('')}</div>`
+      : `<div style="text-align:center;color:#e65100;font-size:0.85rem;margin-bottom:12px;">No hay horarios libres para ese día y duración.</div>`;
+  }
+  const list = st.classes.slice().sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+  html += list.length
+    ? `<div style="background:#f0f7ff;border-radius:12px;padding:10px;margin-bottom:10px;">${list.map(c => `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:0.9rem;"><span><b>${_dateLabel(c.date)}</b> · ${_t12(c.time)} · ${c.minutes} min</span><button type="button" onclick='wbRemove(${q},"${c.date}","${c.time}")' style="border:none;background:#ffebee;color:#c62828;border-radius:6px;padding:3px 9px;cursor:pointer;font-weight:900;">✕</button></div>`).join('')}
+        <div style="border-top:1px solid #cfe0f5;margin-top:6px;padding-top:6px;font-size:0.85rem;font-weight:700;display:flex;justify-content:space-between;"><span>${list.length} clase(s) · ${wbTotal(name)} min</span><span>$${wbBase(name).toLocaleString('es-MX')} MXN</span></div></div>`
+    : `<div style="text-align:center;color:#aaa;font-size:0.85rem;margin-bottom:10px;">Aún no has agregado clases.</div>`;
+  html += `<div style="text-align:center;"><a href="#" onclick='wbUseOld(${q});return false;' style="font-size:0.78rem;color:#888;">Prefiero que me contacten para agendar</a></div>`;
+  box.innerHTML = html;
+}
+function wbPick(name, field, v) { const st = _wb[name]; st[field] = v; if (field === 'date') st.len = null; wbRender(name); }
+function wbAdd(name, time) {
+  const st = _wb[name]; if (!st.date || !st.len) return;
+  st.classes.push({ date: st.date, time, minutes: st.len }); st.len = null;
+  wbChanged(name);
+}
+function wbRemove(name, date, time) { const st = _wb[name]; st.classes = st.classes.filter(c => !(c.date === date && c.time === time)); wbChanged(name); }
+function wbChanged(name) {
+  const t = wbTotal(name);
+  _payState[name].mins = t; _payState[name].days = 1; _payState[name].cycle = 'weekly';
+  wbRender(name);
+  const key = name.replace(/\s/g, '_');
+  if (!t) { ['price-summary-', 'pay-btns-'].forEach(p => { const e = document.getElementById(p + key); if (e) e.style.display = 'none'; }); const ti = document.getElementById('transfer-info-' + key); if (ti) ti.style.display = 'none'; if (typeof updateCombinedSummary === 'function') updateCombinedSummary(); return; }
+  selectPayOption(name, 'cycle', 'weekly');
+}
+function wbUseOld(name) { _wb[name].useOld = true; const key = name.replace(/\s/g, '_'); selectPayOption(name, 'type', '1v1'); const o = document.getElementById('1v1-opts-' + key); if (o) o.style.display = 'block'; }
+// Create the weekly plan on the server just before the transfer is reported; returns the plan id (or null)
+async function wbCreatePlan(name) {
+  if (!isWeekPick(name)) return { id: null };
+  const r = await fetch(SERVER_URL + '/parent/1v1/week-plan', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _parentToken }, body: JSON.stringify({ studentName: name, classes: _wb[name].classes }) });
+  const d = await r.json();
+  return d.success ? { id: d.planId } : { error: d.error || 'No se pudo guardar tu semana. Intenta de nuevo.' };
+}
+// Special plan: admin set an odd weekly schedule (different minutes per day) with a fixed weekly price
+function specialFor(name) { return ((_billingData && _billingData.students) || []).find(x => x.name === name)?.specialPlan || null; }
+function weeklyBaseFor(name, st) {
+  const sp = specialFor(name);
+  if (!sp && isWeekPick(name)) return wbBase(name);
+  return sp ? sp.weekly : calcWeeklyBase(st.type, st.mins || 40, st.days || 4);
+}
+// The one place a child's payment amount is worked out: plan price -> family discount -> absence credit.
+function finalAmountFor(name) {
+  const st = _payState[name];
+  const full = weeklyBaseFor(name, st) * cycleMultiplier(st.cycle);
+  const pct = Number(_familyDiscount) || 0;
+  const afterFamily = pct > 0 ? Math.round(full * (1 - pct / 100)) : full;
+  const cp = couponFor(name);
+  const afterCoupon = cp ? Math.round(afterFamily * (1 - cp.percent / 100)) : afterFamily;
+  const credit = creditFor(name, st, afterCoupon);
+  return { full, pct, afterFamily, couponPct: cp ? cp.percent : 0, couponCode: cp ? cp.code : null, afterCoupon, credit, amount: afterCoupon - credit.value };
+}
+
+function cycleMultiplier(cycle) {
+  return { biweekly: 2, monthly: 4, quarterly: 13, semiannual: 26 }[cycle] || 1;
+}
+
+function cycleLabel(cycle) {
+  return { biweekly: 'Quincenal', monthly: 'Mensual', quarterly: 'Trimestral', semiannual: 'Semestral' }[cycle] || cycle;
+}
+
+function showTransferInfo(studentName) {
+  const key = studentName.replace(/\s/g,'_');
+  const el = document.getElementById(`transfer-info-${key}`);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+const _payMethod = {};
+function setPayMethod(name, m) {
+  _payMethod[name] = m;
+  const key = name.replace(/\s/g, '_');
+  const paint = (el, active) => { if (!el) return; el.style.background = active ? '#00897b' : 'white'; el.style.color = active ? 'white' : '#00897b'; };
+  paint(document.getElementById('pm-clabe-' + key), m === 'clabe');
+  paint(document.getElementById('pm-card-' + key), m === 'card');
+  const ci = document.getElementById('pm-clabe-info-' + key), ki = document.getElementById('pm-card-info-' + key);
+  if (ci) ci.style.display = m === 'card' ? 'none' : 'block';
+  if (ki) ki.style.display = m === 'card' ? 'block' : 'none';
+}
+async function confirmTransfer(studentName) {
+  const st = _payState[studentName];
+  console.log('[TRANSFER] confirmTransfer called for:', studentName, 'payState:', st);
+  if (!st) { console.log('[TRANSFER] No payState found'); return; }
+  if (belowMinimum(studentName)) { alert('El mínimo para clases 1v1 es 1 hora por semana en total.'); return; }
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '⏳ Procesando...';
+  const plan = await wbCreatePlan(studentName);
+  if (plan.error) { alert(plan.error); btn.disabled = false; btn.textContent = '✅ Ya realicé la transferencia'; return; }
+
+  // Save time preferences before marking transfer pending
+  const timePrefs = getTimePreferencesForStudent(studentName);
+  if (timePrefs) {
+    try {
+      await fetch(SERVER_URL + '/parent/schedule-preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _parentToken },
+        body: JSON.stringify({ studentName, ...timePrefs })
+      });
+    } catch(e) { console.error('Could not save preferences:', e); }
+  }
+  await submitScheduleRequest(studentName);
+
+  // Exactly what the parent sees on screen: plan price, family discount, absence credit.
+  // (This used to ignore the family discount even though the screen showed it.)
+  const f = finalAmountFor(studentName);
+  const amount = f.amount;
+
+  try {
+    const payload = {
+      paymentMethod: _payMethod[studentName] || 'clabe',
+      studentNames: [studentName],
+      amount,
+      description: 'Transferencia — ' + studentName,
+      studentDetails: [{
+        name: studentName,
+        enrolledType: st.type === '1v1' ? '1v1 Privada' : 'Grupal',
+        enrolledCycle: st.cycle,
+        enrolledDaysPerWeek: st.days || 4,
+        enrolledMinutesPerClass: st.mins || 40,
+        creditMinsApplied: f.credit.mins,
+        couponCode: st.coupon ? st.coupon.code : undefined,
+        weekPlanId: plan.id || undefined
+      }]
+    };
+    console.log('[TRANSFER] Sending payload:', JSON.stringify(payload));
+    const res = await fetch(SERVER_URL + '/parent/transfer-pending', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _parentToken },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      const key = studentName.replace(/\s/g,'_');
+      const card = document.getElementById('pay-card-' + key);
+      if (card) {
+        card.innerHTML = `
+          <div style="text-align:center;padding:24px;">
+            <div style="font-size:2.5rem;margin-bottom:10px;">⏳</div>
+            <div style="font-size:1.1rem;font-weight:900;color:#00695c;margin-bottom:6px;">${studentName}</div>
+            <div style="font-size:0.95rem;font-weight:700;color:#1a1a2e;margin-bottom:4px;">Tu pago está por verificarse</div>
+            <div style="font-size:0.95rem;font-weight:700;color:#1a1a2e;margin-bottom:12px;">Tu pago está por verificarse</div>
+            <div style="background:#e0f2f1;border-radius:10px;padding:12px;font-size:0.85rem;color:#00695c;">
+              Esto puede tardar de 24 a 48 horas hábiles.
+            </div>
+          </div>`;
+      }
+    } else {
+      btn.textContent = '❌ Error — Intente de nuevo';
+      btn.disabled = false;
+      if (data.error && /cup[oó]n|alumno ya tiene/i.test(data.error)) alert(data.error);
+    }
+  } catch(e) {
+    btn.textContent = '❌ Error — Intente de nuevo';
+    btn.disabled = false;
+  }
+}
+
+(function checkPaymentReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const status = params.get('payment');
+  if (!status) return;
+  if (status === 'success') setTimeout(() => alert('✅ ¡Pago exitoso! Recibimos tu pago.'), 500);
+  else if (status === 'failure') setTimeout(() => alert('❌ El pago no se completó. Intenta de nuevo o contacta a la escuela.'), 500);
+  else if (status === 'pending') setTimeout(() => alert('⏳ Pago pendiente — confirmaremos cuando se procese.'), 500);
+  window.history.replaceState({}, '', window.location.pathname);
+})();
+
+
+// ── SCHEDULE TAB ──
+async function renderScheduleTab() {
+  const wrap = document.getElementById('schedule-content');
+  if (!wrap) return;
+  if (!_billingData) await loadBillingData();
+  const students = _billingData?.students || [];
+
+  if (!students.length) {
+    wrap.innerHTML = '<div style="text-align:center;color:#aaa;padding:32px;">No students found</div>';
+    return;
+  }
+
+  wrap.innerHTML = '<div style="text-align:center;color:#aaa;padding:20px;">⏳ Loading...</div>';
+
+  const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  const allResults = await Promise.all(students.map(async s => {
+    try {
+      const res = await fetch(`${SERVER_URL}/parent/schedule/${encodeURIComponent(s.name)}`, {
+        headers: { Authorization: `Bearer ${_parentToken}` }
+      });
+      const classes = await res.json();
+      return { student: s, classes: Array.isArray(classes) ? classes : [] };
+    } catch(e) {
+      return { student: s, classes: [] };
+    }
+  }));
+
+  if (allResults.every(r => r.classes.length === 0)) {
+    wrap.innerHTML = `<div style="background:white;border-radius:14px;padding:24px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+      <div style="font-size:2rem;margin-bottom:8px;">📅</div>
+      <div style="font-weight:700;color:#1a1a2e;margin-bottom:4px;">Aún no hay clases programadas</div>
+      <div style="font-size:0.85rem;color:#888;">Tu horario aparecerá aquí cuando la escuela asigne clases.</div>
+    </div>`;
+    return;
+  }
+
+  wrap.innerHTML = allResults.map(({ student: s, classes }) => {
+    if (!classes.length) return '';
+    // Group by month
+    const byMonth = {};
+    classes.forEach(c => {
+      const d = new Date(c.date + 'T12:00:00');
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (!byMonth[key]) byMonth[key] = { year: d.getFullYear(), month: d.getMonth(), days: [] };
+      byMonth[key].days.push(c);
+    });
+
+    const monthBlocks = Object.values(byMonth).sort((a,b) => a.year - b.year || a.month - b.month).map(mb => {
+      const rows = mb.days.sort((a,b) => a.date.localeCompare(b.date)).map(c => {
+        const d = new Date(c.date + 'T12:00:00');
+        const dayName = DAY_NAMES[d.getDay()];
+        const dayNum = d.getDate();
+        // Format time from 24h to 12h
+        let timeStr = c.time || '—';
+        if (c.time && c.time.includes(':')) {
+          const [h, m] = c.time.split(':').map(Number);
+          const ampm = h >= 12 ? 'PM' : 'AM';
+          timeStr = `${h % 12 || 12}:${String(m).padStart(2,'0')} ${ampm}`;
+        }
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f0f0f0;">
+          <div style="width:52px;text-align:center;background:#1a1a2e;color:white;border-radius:10px;padding:6px 4px;">
+            <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;">${dayName}</div>
+            <div style="font-size:1.3rem;font-weight:900;line-height:1;">${dayNum}</div>
+          </div>
+          <div>
+            <div style="font-weight:700;color:#1a1a2e;">${timeStr}</div>
+            <div style="font-size:0.78rem;color:#888;">${c.classType || '—'}${c.groupName ? ' · ' + c.groupName : ''}</div>
+          </div>
+          <div style="margin-left:auto;">⭐</div>
+        </div>`;
+      }).join('');
+
+      return `<div style="margin-bottom:8px;">
+        <div style="font-size:0.78rem;font-weight:900;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">${MONTH_NAMES[mb.month]} ${mb.year}</div>
+        ${rows}
+      </div>`;
+    }).join('');
+
+    return `<div style="background:white;border-radius:14px;padding:18px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+      <div style="font-size:1rem;font-weight:900;color:#1a1a2e;margin-bottom:14px;">📅 ${s.name}</div>
+      ${monthBlocks}
+    </div>`;
+  }).join('');
+}
+
+
+// ── CLASS INFO POPUP ──
+function showClassPopup(dateStr) {
+  const classes = (window._calClassInfo || {})[dateStr] || [];
+  if (!classes.length) return;
+
+  // Format time 24h -> 12h
+  function fmt12(t) {
+    if (!t) return '—';
+    const [h, m] = t.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${ampm}`;
+  }
+
+  // Format date nicely
+  const d = new Date(dateStr + 'T12:00:00');
+  const dateLabel = d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+
+  const student = (_billingData?.students || []).find(s => s.name === _calStudentName);
+  const studentPassword = student?.studentPassword || '—';
+
+  const classRows = classes.map(c => {
+    const classRoom = c.room || student?.studentRoom || '—';
+    return `
+    <div style="background:#f8f9fa;border-radius:10px;padding:14px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:1.1rem;">📚</span>
+        <div>
+          <div style="font-weight:900;color:#1a1a2e;font-size:0.95rem;">${c.classType || 'Class'}${c.groupName ? ' · ' + c.groupName : ''}${c.makeup ? ' <span style="background:#e8f0fe;color:#1a73e8;border-radius:6px;padding:1px 7px;font-size:0.7rem;font-weight:900;">🔁 Reposición</span>' : ''}</div>
+          <div style="color:#888;font-size:0.8rem;">🕐 ${fmt12(c.time || c.scheduledTime)}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:linear-gradient(135deg,#1a73e8,#0d47a1);border-radius:10px;padding:12px;text-align:center;">
+          <div style="color:rgba(255,255,255,0.7);font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:1px;">Salón</div>
+          <div style="color:white;font-size:2rem;font-weight:900;line-height:1.2;">${classRoom}</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#6a1b9a,#4a148c);border-radius:10px;padding:12px;text-align:center;">
+          <div style="color:rgba(255,255,255,0.7);font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:1px;">Contraseña</div>
+          <div style="color:white;font-size:1.5rem;font-weight:900;line-height:1.2;letter-spacing:2px;">${studentPassword}</div>
+        </div>
+      </div>
+      ${absenceBlock(c)}
+    </div>`;
+  }).join('');
+
+  // Create/reuse popup
+  let popup = document.getElementById('class-popup');
+  if (!popup) {
+    popup = document.createElement('div');
+    popup.id = 'class-popup';
+    popup.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    popup.onclick = e => { if (e.target === popup) popup.style.display = 'none'; };
+    document.body.appendChild(popup);
+  }
+
+  popup.innerHTML = `
+    <div style="background:white;border-radius:20px;padding:24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <div style="font-weight:900;color:#1a1a2e;font-size:1rem;">📅 ${dateLabel}</div>
+          <div style="color:#1a73e8;font-size:0.9rem;font-weight:900;margin-top:2px;">👤 ${_calStudentName}</div>
+        </div>
+        <button onclick="document.getElementById('class-popup').style.display='none'"
+          style="background:#f0f4f8;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:900;font-size:1rem;">✕</button>
+      </div>
+      ${classRows}
+      <div style="font-size:0.72rem;color:#aaa;text-align:center;margin-top:8px;">Entra a <strong>la página de la escuela</strong> para unirte a tu clase</div>
+    </div>`;
+
+  popup.style.display = 'flex';
+}
+
+
+// ── Absence reporting (calendar popup) ──
+function absentOn(dateStr) {
+  return (window._absenceData?.absences || []).some(x => x.studentName === _calStudentName && x.date === dateStr);
+}
+function absenceBlock(c) {
+  if (!c.sessionId || !c.date) return '';
+  if (c.mine === false) return '';   // not this child's class (e.g. an old class with no student on it)
+  const notice = window._absenceData?.noticeHours || 4;
+  const isGroup = c.kind ? c.kind === 'group' : !!c.groupName;
+  const safe = (v) => String(v || '').replace(/[^\w-]/g, '');
+  const ab = (window._absenceData?.absences || []).find(x => x.studentName === _calStudentName && x.sessionId === c.sessionId);
+  const [h, m] = String(c.time || '00:00').split(':').map(Number);
+  const hoursLeft = (new Date(c.date + 'T06:00:00.000Z').getTime() + (h * 60 + m) * 60000 - Date.now()) / 3600000;
+  const box = (inner) => `<div style="margin-top:8px;padding:10px;border-radius:10px;background:#fff8e1;font-size:0.82rem;text-align:center;">${inner}</div>`;
+  const btnCss = 'margin-top:6px;padding:8px 12px;border:none;border-radius:8px;font-family:Nunito;font-weight:800;cursor:pointer;';
+  if (ab) {
+    const one = ab.kind === '1v1';
+    const label = one && ab.emergency ? '🚨 Reprogramación de emergencia registrada<br><small>La escuela le contactará para programar la nueva clase</small>'
+                : one ? '🚫 Clase cancelada<br><small>Para deshacerla, contacte a la escuela</small>'
+                : ab.status === 'resolved' ? '✅ Ausencia avisada — la escuela ya la atendió<br><small>Aviso recibido — la escuela ya lo atendió</small>'
+                                           : '🚫 Ausencia avisada<br><small>Absence reported</small>';
+    const undo = !one && ab.status === 'reported' && hoursLeft > 0
+      ? `<br><button onclick="cancelAbsence('${safe(ab.id)}')" style="${btnCss}background:#eceff1;color:#455a64;">Deshacer</button>` : '';
+    return box(`<b>${label}</b>${undo}`);
+  }
+  if (hoursLeft >= notice) return box(`<button onclick="reportAbsence('${safe(c.sessionId)}', ${isGroup ? 'false' : 'true'})" style="${btnCss}background:#e53935;color:white;">🚫 Mi hijo/a no asistirá<br><small>My child will be absent</small></button>
+    <div style="color:#888;font-size:0.72rem;margin-top:4px;">Se requieren ${notice} horas de anticipación / ${notice} hours' notice required</div>`);
+  if (hoursLeft > 0) {
+    if (isGroup) return box(`<span style="color:#888;">Las clases de grupo deben cancelarse con ${notice} horas de anticipación y no se pueden reponer.</span>`);
+    const limit = window._absenceData?.emergencyLimit || 2;
+    const month = String(c.date).slice(0, 7);
+    const used = (window._absenceData?.absences || []).filter(x => x.studentName === _calStudentName && x.emergency && String(x.date).slice(0, 7) === month).length;
+    const left = limit - used;
+    if (left > 0) return box(`<button onclick="reportAbsence('${safe(c.sessionId)}', true, true)" style="${btnCss}background:#ef6c00;color:white;">🚨 Reprogramación de emergencia<br><small>Emergency reschedule · quedan ${left} de ${limit} este mes / ${left} of ${limit} left this month</small></button>
+      <div style="color:#888;font-size:0.72rem;margin-top:4px;">La escuela le contactará para programar la nueva clase.</div>`);
+    return box(`<span style="color:#888;">Ya usó sus ${limit} reprogramaciones de emergencia de este mes. Contacte a la escuela.</span>`);
+  }
+  return '';
+}
+async function reportAbsence(sessionId, is1v1, isEmergency) {
+  const name = _calStudentName;
+  const msg = isEmergency
+    ? `🚨 ¿Usar una reprogramación de emergencia para la clase de ${name}?\nLa clase se cancela y la escuela le contactará para programar una nueva.`
+    : is1v1
+    ? `¿Confirmas que quieres CANCELAR esta clase de ${name}?\nSolo la escuela podrá restablecerla.`
+    : `¿Confirmas que ${name} no asistirá a esta clase?\nLas clases de grupo no se pueden reponer.`;
+  if (!confirm(msg)) return;
+  try {
+    const r = await fetch(`${SERVER_URL}/parent/report-absence`, { method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_parentToken}` },
+      body: JSON.stringify({ studentName: name, sessionId }) });
+    const d = await r.json();
+    if (!d.success) { alert(d.error || 'Error'); return; }
+    alert('Listo. Avisamos al maestro y a la escuela, y le enviamos un correo de confirmación.');
+  } catch(e) { alert('Error, intenta de nuevo'); return; }
+  document.getElementById('class-popup').style.display = 'none';
+  await renderCalendarMonth();
+}
+async function cancelAbsence(id) {
+  if (!confirm('¿Deshacer el aviso de ausencia?')) return;
+  try {
+    const r = await fetch(`${SERVER_URL}/parent/cancel-absence`, { method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${_parentToken}` },
+      body: JSON.stringify({ id }) });
+    const d = await r.json();
+    if (!d.success) { alert(d.error || 'Error'); return; }
+  } catch(e) { alert('Error, intenta de nuevo'); return; }
+  document.getElementById('class-popup').style.display = 'none';
+  await renderCalendarMonth();
+}
+
+function goBackToStudents() {
+  showScreen('dashboard');
+  showTab('students');
+}
+
+async function requestTrialContact(studentName) {
+  try {
+    const res = await fetch(SERVER_URL + '/parent/request-trial-contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _parentToken },
+      body: JSON.stringify({ studentName })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert('✅ ¡Gracias! La escuela te contactará pronto para agendar tu clase de prueba.');
+    } else {
+      alert('Error: ' + (data.error || 'Algo salió mal'));
+    }
+  } catch(e) {
+    console.error('Error requesting trial contact:', e);
+    alert('No se pudo enviar la solicitud');
+  }
+}
+
+
+let _reschedTime = '', _reschedDate = '', _reschedAvailMap = {}, _reschedHasOverride = false;
+let _reschedCalYear = new Date().getFullYear(), _reschedCalMonth = new Date().getMonth();
+
+function openRescheduleRequest(studentName) {
+  window._rescheduleStudent = studentName;
+  document.getElementById('reschedule-error').textContent = '';
+  document.getElementById('reschedule-pick-view').style.display = 'block';
+  document.getElementById('reschedule-pending-view').style.display = 'none';
+  document.getElementById('resched-calendar-wrap').style.display = 'none';
+  const sel = document.getElementById('resched-time-select');
+  if (sel.options.length <= 1) {
+    for (let h = 0; h <= 23; h++) {
+      ['00','15','30','45'].forEach(m => {
+        const val = `${String(h).padStart(2,'0')}:${m}`;
+        const disp = new Date(`2000-01-01T${val}`).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:true});
+        sel.innerHTML += `<option value="${val}">${disp}</option>`;
+      });
+    }
+  }
+  document.getElementById('reschedule-modal').style.display = 'flex';
+}
+
+async function searchRescheduleSlots() {
+  const time = document.getElementById('resched-time-select').value;
+  if (!time) return;
+  _reschedTime = time;
+  const res = await fetch(`${SERVER_URL}/trial/availability?time=${time}`);
+  const data = await res.json();
+  _reschedAvailMap = data.colorMap || data;
+  _reschedHasOverride = data.hasOverride || false;
+  document.getElementById('resched-calendar-wrap').style.display = 'block';
+  renderRescheduleCal();
+}
+
+function changeRescheduleMonth(dir) {
+  _reschedCalMonth += dir;
+  if (_reschedCalMonth < 0) { _reschedCalMonth = 11; _reschedCalYear--; }
+  if (_reschedCalMonth > 11) { _reschedCalMonth = 0; _reschedCalYear++; }
+  renderRescheduleCal();
+}
+
+function renderRescheduleCal() {
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('resched-cal-title').textContent = `${months[_reschedCalMonth]} ${_reschedCalYear}`;
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
+  const days = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  let html = days.map(d=>`<div class="resched-cal-hdr">${d}</div>`).join('');
+  const firstDay = new Date(_reschedCalYear, _reschedCalMonth, 1).getDay();
+  const daysIn = new Date(_reschedCalYear, _reschedCalMonth+1, 0).getDate();
+  for (let i=0; i<firstDay; i++) html += `<div class="resched-cal-day empty"></div>`;
+  for (let d=1; d<=daysIn; d++) {
+    const ds = `${_reschedCalYear}-${String(_reschedCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isPast = ds < today;
+    const color = _reschedAvailMap[ds];
+    const dateTime = new Date(`${ds}T${_reschedTime || '00:00'}:00`);
+    const tooSoon = !_reschedHasOverride && (dateTime - new Date()) / 3600000 < 24;
+    let cls = 'resched-cal-day';
+    let onclick = '';
+    if (isPast || tooSoon) cls += ' past';
+    else if (color === 'green') { cls += ' green'; onclick = `onclick="pickRescheduleDate('${ds}')"`; }
+    else cls += ' grey';
+    if (ds === today) cls += ' today';
+    html += `<div class="${cls}" ${onclick}>${d}</div>`;
+  }
+  document.getElementById('resched-cal-grid').innerHTML = html;
+}
+
+function pickRescheduleDate(date) {
+  if (!_reschedHasOverride) {
+    const selected = new Date(`${date}T${_reschedTime}:00`);
+    const diffHrs = (selected - new Date()) / 3600000;
+    if (diffHrs < 24) { alert('Selecciona una fecha con al menos 24 horas de anticipación.'); return; }
+  }
+  _reschedDate = date;
+  const timeDisp = new Date(`2000-01-01T${_reschedTime}`).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:true});
+  document.getElementById('resched-confirm-text').innerHTML = `Request <strong>${date}</strong> at <strong>${timeDisp}</strong> for your trial class?<br><span style="color:#888;font-size:0.85rem;">This needs admin approval before it's confirmed.</span>`;
+  document.getElementById('resched-confirm-popup').style.display = 'flex';
+}
+
+async function confirmRescheduleRequest() {
+  document.getElementById('resched-confirm-popup').style.display = 'none';
+  const studentName = window._rescheduleStudent;
+  const errEl = document.getElementById('reschedule-error');
+  errEl.textContent = '';
+  try {
+    const res = await fetch(SERVER_URL + '/parent/request-reschedule-slot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _parentToken },
+      body: JSON.stringify({ studentName, requestedDate: _reschedDate, requestedTime: _reschedTime })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('reschedule-pick-view').style.display = 'none';
+      document.getElementById('reschedule-pending-view').style.display = 'block';
+    } else {
+      errEl.textContent = data.error || 'Algo salió mal';
+    }
+  } catch(e) {
+    errEl.textContent = 'No se pudo enviar la solicitud';
+  }
+}
+
+</script>
+
+
+
+
+<!-- redeploy -->
+</body>
+</html>

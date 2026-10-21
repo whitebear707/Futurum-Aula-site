@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script src="config.js"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="icon" type="image/png" href="icon.png"/>
+  <link rel="apple-touch-icon" href="icon.png"/>
+  <title>Aula Futura — Clases de inglés en línea</title>
+  <meta name="description" content="Escuela de inglés en línea. Clases privadas y en grupos pequeños, con maestros reales y horarios flexibles."/>
+
+  <!-- Open Graph / Link Preview -->
+  <meta property="og:title" content="Aula Futura — Clases de inglés en línea"/>
+  <meta property="og:description" content="Clases privadas y en grupos pequeños, con maestros reales y horarios flexibles."/>
+  <meta property="og:image" content="LOGO.png"/>
+  <meta property="og:type" content="website"/>
+
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --ink:      #14213d;
+      --ink-soft: #5a6b8a;
+      --sky:      #1a73e8;
+      --sky-pale: #eaf2fe;
+      --paper:    #f7fafd;
+      --sun:      #ffc93c;
+      --leaf:     #00a878;
+      --coral:    #ff6b5b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--ink);
+      background: #fff;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+    /* ---------- Nav ---------- */
+    .nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #e8eef6;
+    }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo img { height: 40px; }
+    .nav-links { display: flex; align-items: center; gap: 26px; }
+    .nav-links a:not(.btn) {
+      color: var(--ink-soft); text-decoration: none;
+      font-size: 0.94rem; font-weight: 700;
+    }
+    .nav-links a:not(.btn):hover { color: var(--sky); }
+    .nav-links a.btn-primary { color: #fff; }
+    .btn {
+      display: inline-block; text-decoration: none;
+      font-family: inherit; font-weight: 900; cursor: pointer;
+      border: none; border-radius: 12px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary {
+      background: var(--sky); color: #fff;
+      padding: 12px 24px; font-size: 1rem;
+      box-shadow: 0 4px 14px rgba(26,115,232,0.30);
+    }
+    .btn-primary:hover { background: #1560c4; box-shadow: 0 6px 18px rgba(26,115,232,0.38); }
+    .btn-ghost {
+      background: #fff; color: var(--sky);
+      border: 2px solid var(--sky);
+      padding: 12px 24px; font-size: 1rem;
+    }
+    .btn-ghost:hover { background: var(--sky-pale); }
+    .btn-sm { padding: 9px 18px; font-size: 0.92rem; border-radius: 10px; }
+
+    /* ---------- Hero ---------- */
+    .hero {
+      background:
+        radial-gradient(1000px 420px at 82% -8%, rgba(255,201,60,0.20), transparent 60%),
+        radial-gradient(820px 380px at 8% 12%, rgba(0,168,120,0.14), transparent 62%),
+        var(--paper);
+      padding: 76px 0 84px;
+      border-bottom: 1px solid #e8eef6;
+    }
+    .hero-grid { display: grid; grid-template-columns: 1.08fr 0.92fr; gap: 52px; align-items: center; }
+    .eyebrow {
+      display: inline-block;
+      background: #fff; border: 1px solid #dbe6f5;
+      color: var(--sky); font-size: 0.82rem; font-weight: 900;
+      padding: 6px 14px; border-radius: 999px; margin-bottom: 20px;
+    }
+    h1 {
+      font-size: clamp(2.1rem, 5vw, 3.3rem);
+      font-weight: 900; line-height: 1.12; letter-spacing: -0.02em;
+      margin-bottom: 18px;
+    }
+    h1 .accent {
+      background: linear-gradient(180deg, transparent 62%, var(--sun) 62%);
+      padding: 0 4px;
+    }
+    .hero p.lede {
+      font-size: 1.12rem; color: var(--ink-soft); max-width: 46ch; margin-bottom: 30px;
+    }
+    .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+    .hero-note { font-size: 0.9rem; color: var(--ink-soft); }
+
+    /* Hero card */
+    .hero-card {
+      background: #fff; border-radius: 22px; padding: 26px;
+      box-shadow: 0 18px 50px rgba(20,33,61,0.13);
+      border: 1px solid #eef3f9;
+    }
+    .hero-card h3 { font-size: 1rem; margin-bottom: 16px; }
+    .slot {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 14px; border-radius: 13px;
+      background: var(--paper); margin-bottom: 10px;
+      border: 1px solid #eaf0f7;
+    }
+    .slot-icon {
+      width: 38px; height: 38px; flex: 0 0 38px;
+      border-radius: 11px; display: grid; place-items: center;
+      font-size: 1.1rem;
+    }
+    .slot-title { font-weight: 900; font-size: 0.95rem; }
+    .slot-sub { font-size: 0.82rem; color: var(--ink-soft); }
+
+    /* ---------- Sections ---------- */
+    section { padding: 76px 0; }
+    .section-head { text-align: center; max-width: 620px; margin: 0 auto 46px; }
+    h2 {
+      font-size: clamp(1.6rem, 3.4vw, 2.2rem);
+      font-weight: 900; letter-spacing: -0.015em; margin-bottom: 12px;
+    }
+    .section-head p { color: var(--ink-soft); font-size: 1.03rem; }
+
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+    .card {
+      background: #fff; border: 1px solid #e8eef6; border-radius: 18px;
+      padding: 28px 24px;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(20,33,61,0.09); }
+    .card-icon {
+      width: 46px; height: 46px; border-radius: 13px;
+      display: grid; place-items: center; font-size: 1.35rem; margin-bottom: 16px;
+    }
+    .card h3 { font-size: 1.08rem; margin-bottom: 8px; }
+    .card p { color: var(--ink-soft); font-size: 0.95rem; }
+
+    /* Class type panels */
+    .types { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    .type {
+      border-radius: 20px; padding: 32px 28px;
+      border: 2px solid #e8eef6; background: #fff;
+    }
+    .type.featured { border-color: var(--sky); background: var(--sky-pale); }
+    .type-tag {
+      display: inline-block; font-size: 0.76rem; font-weight: 900;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 5px 11px; border-radius: 999px; margin-bottom: 14px;
+    }
+    .type h3 { font-size: 1.3rem; margin-bottom: 10px; }
+    .type > p { color: var(--ink-soft); margin-bottom: 18px; }
+    .type ul { list-style: none; }
+    .type li {
+      padding: 7px 0 7px 27px; position: relative;
+      font-size: 0.95rem;
+    }
+    .type li::before {
+      content: '✓'; position: absolute; left: 0; top: 7px;
+      color: var(--leaf); font-weight: 900;
+    }
+
+    /* Steps */
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; counter-reset: step; }
+    .step { text-align: center; }
+    .step-num {
+      width: 46px; height: 46px; margin: 0 auto 14px;
+      border-radius: 50%; background: var(--sky); color: #fff;
+      display: grid; place-items: center;
+      font-weight: 900; font-size: 1.15rem;
+    }
+    .step h3 { font-size: 1.05rem; margin-bottom: 6px; }
+    .step p { color: var(--ink-soft); font-size: 0.94rem; }
+
+    /* Levels */
+    .levels { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .level {
+      background: #fff; border: 2px solid #e8eef6; border-radius: 14px;
+      padding: 16px 22px; text-align: center; min-width: 104px;
+    }
+    .level-code { font-size: 1.3rem; font-weight: 900; color: var(--sky); }
+    .level-name { font-size: 0.82rem; color: var(--ink-soft); font-weight: 700; }
+
+    /* CTA band */
+    .cta-band {
+      background: linear-gradient(135deg, #14213d, #1a3a6e);
+      color: #fff; border-radius: 24px; padding: 54px 40px; text-align: center;
+    }
+    .cta-band h2 { color: #fff; }
+    .cta-band p { color: rgba(255,255,255,0.82); font-size: 1.05rem; margin-bottom: 28px; }
+    .btn-sun { background: var(--sun); color: var(--ink); padding: 15px 34px; font-size: 1.05rem; }
+    .btn-sun:hover { background: #f5bd24; }
+    .btn-wa {
+      background: #25d366; color: #fff;
+      padding: 12px 24px; font-size: 1rem;
+      box-shadow: 0 4px 14px rgba(37,211,102,0.32);
+    }
+    .btn-wa:hover { background: #1eb857; box-shadow: 0 6px 18px rgba(37,211,102,0.42); }
+    .btn-wa-lg { padding: 15px 34px; font-size: 1.05rem; }
+
+    /* Footer */
+    footer {
+      background: var(--paper); border-top: 1px solid #e8eef6;
+      padding: 44px 0 34px; margin-top: 76px;
+    }
+    .foot-inner { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .foot-logo img { height: 38px; }
+    .foot-links { display: flex; gap: 22px; flex-wrap: wrap; }
+    .foot-links a { color: var(--ink-soft); text-decoration: none; font-size: 0.92rem; font-weight: 700; }
+    .foot-links a:hover { color: var(--sky); }
+    .foot-legal {
+      text-align: center; color: #9aa8bd; font-size: 0.85rem;
+      margin-top: 26px; padding-top: 22px; border-top: 1px solid #e5ecf5;
+    }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr; gap: 38px; }
+      .cards, .steps { grid-template-columns: 1fr; }
+      .types { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 620px) {
+      .nav-links a:not(.btn) { display: none; }
+      section { padding: 56px 0; }
+      .hero { padding: 52px 0 60px; }
+      .cta-band { padding: 40px 24px; }
+      .foot-inner { flex-direction: column; text-align: center; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; scroll-behavior: auto !important; }
+    }
+    a:focus-visible, button:focus-visible {
+      outline: 3px solid var(--sun); outline-offset: 3px;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a href="login.html" class="nav-logo"><img src="LOGO.png" alt="Aula Futura"/></a>
+    <div class="nav-links">
+      <a href="#clases">Clases</a>
+      <a href="#como-funciona">Cómo funciona</a>
+      <a href="#niveles">Niveles</a>
+      <a href="login.html" class="btn btn-primary btn-sm">Entrar a clase</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Escuela de inglés en línea</span>
+      <h1>Aprende inglés <span class="accent">desde donde estés</span></h1>
+      <p class="lede">
+        Clases en vivo con maestros reales, en grupos pequeños o uno a uno.
+        Sin apps que instalar — solo abre tu navegador y entra.
+      </p>
+      <div class="hero-cta">
+        <a href="login.html" class="btn btn-primary">Entrar a clase</a>
+        <a href="https://wa.me/?text=Hola%2C%20me%20interesa%20inscribir%20a%20un%20alumno%20en%20Aula Futura%20y%20necesito%20un%20c%C3%B3digo%20de%20registro."
+           target="_blank" rel="noopener" class="btn btn-wa js-wa">💬 Inscríbete por WhatsApp</a>
+      </div>
+      <p class="hero-note">¿Ya tienes cuenta? Entra con el número de salón y tu contraseña.</p>
+    </div>
+
+    <div class="hero-card">
+      <h3>Lo que incluye cada clase</h3>
+      <div class="slot">
+        <div class="slot-icon" style="background:#e7f7f1;">🎥</div>
+        <div>
+          <div class="slot-title">Video en vivo</div>
+          <div class="slot-sub">Maestro y alumnos, cara a cara</div>
+        </div>
+      </div>
+      <div class="slot">
+        <div class="slot-icon" style="background:var(--sky-pale);">✏️</div>
+        <div>
+          <div class="slot-title">Pizarra compartida</div>
+          <div class="slot-sub">Para escribir y practicar juntos</div>
+        </div>
+      </div>
+      <div class="slot">
+        <div class="slot-icon" style="background:#fff6df;">📋</div>
+        <div>
+          <div class="slot-title">Panel para padres</div>
+          <div class="slot-sub">Asistencia, calendario y pagos</div>
+        </div>
+      </div>
+      <div class="slot" style="margin-bottom:0;">
+        <div class="slot-icon" style="background:#ffecea;">📶</div>
+        <div>
+          <div class="slot-title">Prueba de conexión</div>
+          <div class="slot-sub">Revisa tu internet antes de entrar</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="clases">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Dos formas de aprender</h2>
+      <p>Elige la que mejor se acomode al horario y al ritmo del alumno.</p>
+    </div>
+    <div class="types">
+      <div class="type">
+        <span class="type-tag" style="background:#e7f7f1;color:#00785a;">Grupal</span>
+        <h3>Clases en grupo</h3>
+        <p>Grupos pequeños del mismo nivel, con horario fijo cada semana.</p>
+        <ul>
+          <li>De lunes a jueves</li>
+          <li>Sesiones de 40 minutos</li>
+          <li>Grupos reducidos</li>
+          <li>Precio más accesible</li>
+        </ul>
+      </div>
+      <div class="type featured">
+        <span class="type-tag" style="background:var(--sky);color:#fff;">1 a 1</span>
+        <h3>Clases privadas</h3>
+        <p>Un maestro dedicado solo al alumno, con horario a elegir.</p>
+        <ul>
+          <li>Tú eliges los días y la hora</li>
+          <li>Sesiones de 30, 40, 50 o 60 minutos</li>
+          <li>De 1 a 4 clases por semana</li>
+          <li>Atención personalizada</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="como-funciona" style="background:var(--paper);">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Cómo empezar</h2>
+      <p>Tres pasos, y la primera clase de prueba es gratis.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Pide tu código</h3>
+        <p>Escríbenos por WhatsApp y te damos el código de registro para crear la cuenta.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Examen de nivel</h3>
+        <p>Una prueba corta en línea para ubicar al alumno en el nivel correcto.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Clase de prueba</h3>
+        <p>Conoce al maestro en una clase gratis antes de inscribirte.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="niveles">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Niveles</h2>
+      <p>Del primer contacto con el idioma hasta conversación avanzada.</p>
+    </div>
+    <div class="levels">
+      <div class="level"><div class="level-code">A1</div><div class="level-name">Principiante</div></div>
+      <div class="level"><div class="level-code">A2</div><div class="level-name">Básico</div></div>
+      <div class="level"><div class="level-code">B1</div><div class="level-name">Intermedio</div></div>
+      <div class="level"><div class="level-code">B2</div><div class="level-name">Intermedio alto</div></div>
+      <div class="level"><div class="level-code">C1</div><div class="level-name">Avanzado</div></div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="cta-band">
+      <h2>¿Listo para la primera clase?</h2>
+      <p>Regístrate hoy y agenda una clase de prueba sin costo.</p>
+      <a href="https://wa.me/?text=Hola%2C%20me%20interesa%20inscribir%20a%20un%20alumno%20en%20Aula Futura%20y%20necesito%20un%20c%C3%B3digo%20de%20registro."
+         target="_blank" rel="noopener" class="btn btn-wa btn-wa-lg js-wa">💬 Inscríbete por WhatsApp</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-inner">
+      <div class="foot-logo"><img src="LOGO.png" alt="Aula Futura"/></div>
+      <div class="foot-links">
+        <a href="login.html">Entrar a clase</a>
+        <a href="parent.html">Panel de padres</a>
+        <a href="#clases">Clases</a>
+        <a href="#niveles">Niveles</a>
+      </div>
+    </div>
+    <div class="foot-legal">© <span id="year"></span> Aula Futura — Escuela de inglés en línea</div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Pull the school's current WhatsApp number from the server so admin can change it
+  // without a redeploy. The links already have a working number hardcoded, so if the
+  // server is asleep or unreachable, the buttons still work — they just use the old one.
+  (async () => {
+    try {
+      const res = await fetch(window.AF_CONFIG.SERVER_URL + '/school-info/public', {
+        signal: AbortSignal.timeout(6000)
+      });
+      if (!res.ok) return;
+      const { whatsapp } = await res.json();
+      if (!whatsapp || !/^\d{10,15}$/.test(whatsapp)) return;
+      const msg = encodeURIComponent('Hola, me interesa inscribir a un alumno en Aula Futura y necesito un código de registro.');
+      document.querySelectorAll('.js-wa').forEach(a => {
+        a.href = `https://wa.me/${whatsapp}?text=${msg}`;
+      });
+    } catch (e) { /* keep the hardcoded fallback */ }
+  })();
+</script>
+</body>
+</html>
